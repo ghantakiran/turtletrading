@@ -1,0 +1,17 @@
+# Claude Implementation Prompt (Part AG)
+
+INSTRUCTIONS
+- Paste this part first if its name is part_aa, then proceed alphabetically.
+- Keep model memory between parts.
+- Do not regenerate content from earlier parts; continue appending outputs.
+
+BEGIN_PART_AG
+
+ve links in docs; no duplication.
+
+DELIVERABLES
+- Complete file plan and full file contents for ALL changes above.
+- All tests and coverage configs included and passing under the documented commands.
+- CI workflow that enforces the gates and uploads artifacts.
+
+END_PART_AG

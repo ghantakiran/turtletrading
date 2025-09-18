@@ -1,0 +1,156 @@
+{
+  "symbol": "AAPL",
+  "analysis_date": "2024-01-15T10:00:00Z",
+  "data_period": "90d",
+  "expected_technical_indicators": {
+    "rsi": {
+      "current": 45.67,
+      "signal": "neutral",
+      "overbought_threshold": 70,
+      "oversold_threshold": 30,
+      "interpretation": "RSI indicates neutral momentum"
+    },
+    "macd": {
+      "macd_line": 1.23,
+      "signal_line": 1.15,
+      "histogram": 0.08,
+      "trend": 1.0,
+      "interpretation": "MACD showing bullish divergence"
+    },
+    "bollinger_bands": {
+      "upper": 155.0,
+      "middle": 150.0,
+      "lower": 145.0,
+      "position": 0.5,
+      "width": 10.0,
+      "interpretation": "Price at middle of Bollinger Bands - neutral"
+    },
+    "stochastic": {
+      "k_percent": 75.0,
+      "d_percent": 72.0,
+      "signal": 1.0,
+      "interpretation": "Stochastic oscillator in overbought territory"
+    },
+    "adx": {
+      "adx": 35.0,
+      "plus_di": 25.0,
+      "minus_di": 15.0,
+      "trend_strength": "Strong",
+      "interpretation": "Strong trending market with bullish momentum"
+    },
+    "obv": {
+      "current": 125000000,
+      "trend": "increasing",
+      "interpretation": "On-Balance Volume confirms price trend"
+    },
+    "atr": {
+      "current": 3.45,
+      "interpretation": "Average True Range indicates moderate volatility"
+    },
+    "moving_averages": {
+      "ema_20": 151.2,
+      "sma_50": 148.7,
+      "sma_200": 142.3,
+      "price_vs_ema20": "above",
+      "price_vs_sma50": "above",
+      "price_vs_sma200": "above",
+      "interpretation": "Price above all major moving averages - bullish"
+    },
+    "volume_analysis": {
+      "volume_sma": 70000000,
+      "current_vs_average": "above_average",
+      "interpretation": "Higher than average volume confirms price movement"
+    }
+  },
+  "composite_scores": {
+    "technical_score": 0.65,
+    "momentum_score": 0.58,
+    "trend_score": 0.72,
+    "volatility_score": 0.60,
+    "volume_score": 0.68
+  },
+  "signals": {
+    "primary_signal": "BUY",
+    "signal_strength": 0.65,
+    "confidence": 0.78,
+    "timeframe": "short_term",
+    "supporting_indicators": ["MACD", "ADX", "Moving_Averages", "Volume"],
+    "opposing_indicators": ["RSI", "Stochastic"]
+  },
+  "risk_assessment": {
+    "support_levels": [148.0, 145.0, 142.0],
+    "resistance_levels": [155.0, 158.0, 162.0],
+    "stop_loss_suggestion": 147.5,
+    "take_profit_suggestion": 157.0,
+    "risk_reward_ratio": 2.1,
+    "volatility_risk": "moderate"
+  },
+  "market_context": {
+    "sector": "Technology",
+    "market_cap_category": "Large Cap",
+    "correlation_with_market": 0.75,
+    "beta": 1.2,
+    "relative_strength": 0.68
+  },
+  "calculation_metadata": {
+    "lookback_periods": {
+      "rsi": 14,
+      "macd_fast": 12,
+      "macd_slow": 26,
+      "macd_signal": 9,
+      "bollinger_period": 20,
+      "bollinger_std": 2,
+      "stochastic_k": 14,
+      "stochastic_d": 3,
+      "adx_period": 14,
+      "atr_period": 14,
+      "ema_period": 20,
+      "sma_50_period": 50,
+      "sma_200_period": 200,
+      "volume_sma_period": 20
+    },
+    "price_precision": 2,
+    "calculation_timestamp": "2024-01-15T10:00:00Z",
+    "data_source": "yfinance",
+    "calculation_library": "ta-lib"
+  },
+  "validation_checksums": {
+    "input_data_hash": "sha256:a1b2c3d4e5f6g7h8i9j0",
+    "calculation_hash": "sha256:z9y8x7w6v5u4t3s2r1q0",
+    "expected_output_hash": "sha256:m1n2o3p4q5r6s7t8u9v0"
+  },
+  "test_scenarios": {
+    "normal_market": {
+      "description": "Regular trading conditions",
+      "expected_accuracy": 0.85,
+      "confidence_threshold": 0.70
+    },
+    "volatile_market": {
+      "description": "High volatility conditions",
+      "expected_accuracy": 0.75,
+      "confidence_threshold": 0.60
+    },
+    "trending_market": {
+      "description": "Strong trending conditions",
+      "expected_accuracy": 0.90,
+      "confidence_threshold": 0.80
+    },
+    "sideways_market": {
+      "description": "Range-bound trading",
+      "expected_accuracy": 0.70,
+      "confidence_threshold": 0.55
+    }
+  },
+  "edge_cases": {
+    "missing_data_handling": {
+      "partial_data": "Use available indicators, flag incomplete analysis",
+      "stale_data": "Mark as outdated, reduce confidence",
+      "corrupt_data": "Return error, request fresh data"
+    },
+    "extreme_values": {
+      "rsi_extremes": "Cap at 0-100 range",
+      "price_gaps": "Adjust volatility calculations",
+      "volume_spikes": "Normalize against historical averages"
+    }
+  }
+}

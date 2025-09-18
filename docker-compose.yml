@@ -1,0 +1,183 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: turtletrading-postgres
+    environment:
+      POSTGRES_DB: turtletrading
+      POSTGRES_USER: turtletrading
+      POSTGRES_PASSWORD: turtletrading_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - turtletrading-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U turtletrading -d turtletrading"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: turtletrading-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - turtletrading-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: turtletrading-backend
+    environment:
+      - DATABASE_URL=postgresql://turtletrading:turtletrading_pass@postgres:5432/turtletrading
+      - ASYNC_DATABASE_URL=postgresql+asyncpg://turtletrading:turtletrading_pass@postgres:5432/turtletrading
+      - REDIS_URL=redis://redis:6379
+      - DEBUG=True
+      - SECRET_KEY=dev-secret-key-change-in-production
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - turtletrading-network
+    command: >
+      sh -c "
+        echo 'Waiting for services to be ready...' &&
+        sleep 10 &&
+        echo 'Starting FastAPI server...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: turtletrading-frontend
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000/api/v1
+      - REACT_APP_WS_URL=ws://localhost:8000/ws
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - frontend_logs:/app/logs
+    depends_on:
+      - backend
+    networks:
+      - turtletrading-network
+    command: npm start
+    stdin_open: true
+    tty: true
+
+  # Nginx Reverse Proxy (for production-like setup)
+  nginx:
+    image: nginx:alpine
+    container_name: turtletrading-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - turtletrading-network
+
+  # Development Tools Container
+  dev-tools:
+    build:
+      context: ./dev-tools
+      dockerfile: Dockerfile
+    container_name: turtletrading-dev-tools
+    volumes:
+      - ./:/workspace
+      - dev_tools_data:/home/devuser/.local
+    networks:
+      - turtletrading-network
+    command: tail -f /dev/null  # Keep container running
+    profiles:
+      - dev-tools
+
+  # Playwright Testing
+  playwright:
+    build:
+      context: ./tests
+      dockerfile: Dockerfile.playwright
+    container_name: turtletrading-playwright
+    volumes:
+      - ./tests:/tests
+      - ./frontend:/frontend:ro
+      - playwright_results:/tests/test-results
+      - playwright_reports:/tests/playwright-report
+    environment:
+      - CI=true
+      - BASE_URL=http://frontend:3000
+      - API_URL=http://backend:8000
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - turtletrading-network
+    profiles:
+      - testing
+    command: tail -f /dev/null
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_logs:
+    driver: local
+  frontend_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  dev_tools_data:
+    driver: local
+  playwright_results:
+    driver: local
+  playwright_reports:
+    driver: local
+
+networks:
+  turtletrading-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

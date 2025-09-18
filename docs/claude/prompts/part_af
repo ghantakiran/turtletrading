@@ -1,0 +1,639 @@
+# Claude Implementation Prompt (Part AF)
+
+INSTRUCTIONS
+- Paste this part first if its name is part_aa, then proceed alphabetically.
+- Keep model memory between parts.
+- Do not regenerate content from earlier parts; continue appending outputs.
+
+BEGIN_PART_AF
+
+uccess_rate", min_value=0.95)
+
+    # Tracing assertions
+    assert_trace_header_present("X-Request-ID")
+    assert_trace_spans_connected(["auth", "data_fetch", "analysis", "response"])
+```
+```
+
+### docs/claude/tests/specs/authentication/jwt_security_tests.md
+```markdown
+# Authentication • JWT Security Tests
+
+- **REQ-IDs covered**: REQ-AUTH-01, REQ-AUTH-02, REQ-AUTH-03
+- **Given/When/Then scenarios**:
+
+## UT-AUTH-01.1: JWT Token Generation and Validation
+**Given**: Valid user credentials and authentication request
+**When**: generate_jwt_token() creates access and refresh tokens
+**Then**: Tokens are properly signed, have correct expiration, and validate successfully
+
+```python
+def test_jwt_token_generation():
+    # Arrange
+    user_data = {
+        'user_id': 'user123',
+        'email': 'test@example.com',
+        'subscription_tier': 'pro'
+    }
+
+    # Act
+    tokens = auth_service.generate_jwt_token(user_data)
+
+    # Assert
+    assert 'access_token' in tokens
+    assert 'refresh_token' in tokens
+
+    # Validate access token
+    decoded = jwt.decode(tokens['access_token'], JWT_SECRET, algorithms=['HS256'])
+    assert decoded['user_id'] == 'user123'
+    assert decoded['exp'] > time.time()  # Not expired
+    assert decoded['iat'] <= time.time()  # Issued in past or now
+
+    # Validate refresh token
+    refresh_decoded = jwt.decode(tokens['refresh_token'], JWT_SECRET, algorithms=['HS256'])
+    assert refresh_decoded['type'] == 'refresh'
+    assert refresh_decoded['user_id'] == 'user123'
+```
+
+## UT-AUTH-01.2: Token Expiration Handling
+**Given**: Expired JWT access token
+**When**: validate_jwt_token() processes expired token
+**Then**: Return token expired error and suggest refresh
+
+```python
+def test_expired_token_handling():
+    # Arrange
+    expired_token = auth_service.generate_expired_token('user123')  # Test helper
+
+    # Act
+    validation_result = auth_service.validate_jwt_token(expired_token)
+
+    # Assert
+    assert validation_result['valid'] == False
+    assert validation_result['error'] == 'TOKEN_EXPIRED'
+    assert validation_result['suggestion'] == 'refresh_token_required'
+    assert 'user_id' not in validation_result  # No user data for expired token
+```
+
+## UT-AUTH-02.1: Rate Limiting Authentication Attempts
+**Given**: Multiple failed login attempts from same IP
+**When**: attempt_login() is called repeatedly with wrong credentials
+**Then**: Implement rate limiting after 5 failed attempts in 15 minutes
+
+```python
+async def test_authentication_rate_limiting():
+    # Arrange
+    ip_address = '192.168.1.100'
+    invalid_credentials = {'email': 'test@example.com', 'password': 'wrong_password'}
+
+    # Act - Make 5 failed attempts
+    failed_attempts = []
+    for i in range(5):
+        result = await auth_service.attempt_login(invalid_credentials, ip_address)
+        failed_attempts.append(result)
+
+    # 6th attempt should be rate limited
+    rate_limited_result = await auth_service.attempt_login(invalid_credentials, ip_address)
+
+    # Assert
+    for attempt in failed_attempts:
+        assert attempt['success'] == False
+        assert attempt['error'] == 'INVALID_CREDENTIALS'
+
+    assert rate_limited_result['success'] == False
+    assert rate_limited_result['error'] == 'RATE_LIMITED'
+    assert rate_limited_result['retry_after'] > 0  # Seconds until retry allowed
+```
+
+## UT-AUTH-03.1: Password Security and Hashing
+**Given**: User registration with plaintext password
+**When**: hash_password() processes the password
+**Then**: Store bcrypt hashed password, never store plaintext
+
+```python
+def test_password_hashing_security():
+    # Arrange
+    plaintext_password = 'MySecurePassword123!'
+
+    # Act
+    hashed = auth_service.hash_password(plaintext_password)
+
+    # Assert
+    assert hashed != plaintext_password  # Never store plaintext
+    assert hashed.startswith('$2b$')  # bcrypt hash format
+    assert len(hashed) == 60  # Standard bcrypt hash length
+
+    # Verify password can be validated
+    is_valid = auth_service.verify_password(plaintext_password, hashed)
+    assert is_valid == True
+
+    # Verify wrong password fails
+    is_invalid = auth_service.verify_password('WrongPassword', hashed)
+    assert is_invalid == False
+```
+
+## ET-AUTH-01.1: Malformed JWT Token Handling
+**Given**: Malformed or tampered JWT token
+**When**: validate_jwt_token() processes invalid token
+**Then**: Handle gracefully without exposing internal errors
+
+```python
+def test_malformed_jwt_handling():
+    # Arrange
+    malformed_tokens = [
+        'invalid.jwt.token',
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.tampered.signature',
+        '',
+        None,
+        'Bearer malformed_token_here'
+    ]
+
+    for token in malformed_tokens:
+        # Act
+        result = auth_service.validate_jwt_token(token)
+
+        # Assert
+        assert result['valid'] == False
+        assert result['error'] in ['INVALID_TOKEN', 'MALFORMED_TOKEN']
+        assert 'user_id' not in result
+        # Ensure no internal error details leaked
+        assert 'traceback' not in result
+        assert 'exception' not in result
+```
+
+## ET-AUTH-02.1: SQL Injection in Authentication
+**Given**: Malicious SQL injection attempt in email field
+**When**: attempt_login() processes malicious input
+**Then**: Parameterized queries prevent SQL injection attacks
+
+```python
+async def test_sql_injection_prevention():
+    # Arrange
+    malicious_credentials = {
+        'email': "admin@example.com'; DROP TABLE users; --",
+        'password': 'any_password'
+    }
+
+    # Act
+    result = await auth_service.attempt_login(malicious_credentials)
+
+    # Assert
+    assert result['success'] == False
+    assert result['error'] == 'INVALID_CREDENTIALS'
+
+    # Verify database integrity - users table should still exist
+    user_count = await db_service.count_users()
+    assert user_count >= 0  # Table exists and queryable
+```
+
+## PT-AUTH-01.1: Session Security Properties
+**Given**: Valid authentication session
+**When**: User performs authenticated actions
+**Then**: Session maintains security properties throughout lifecycle
+
+```python
+async def test_session_security_properties():
+    # Arrange
+    user_credentials = {'email': 'test@example.com', 'password': 'ValidPassword123!'}
+
+    # Act - Create session
+    login_result = await auth_service.attempt_login(user_credentials)
+    access_token = login_result['access_token']
+
+    # Property 1: Token should validate consistently
+    for _ in range(10):
+        validation = auth_service.validate_jwt_token(access_token)
+        assert validation['valid'] == True
+        assert validation['user_id'] == login_result['user_id']
+
+    # Property 2: Token should expire at predicted time
+    token_payload = jwt.decode(access_token, options={"verify_signature": False})
+    predicted_expiry = token_payload['exp']
+
+    # Wait until just before expiry
+    time_until_expiry = predicted_expiry - time.time()
+    if time_until_expiry > 1:
+        await asyncio.sleep(max(0, time_until_expiry - 0.5))
+
+    validation_before_expiry = auth_service.validate_jwt_token(access_token)
+    assert validation_before_expiry['valid'] == True
+
+    # Wait past expiry
+    await asyncio.sleep(1)
+    validation_after_expiry = auth_service.validate_jwt_token(access_token)
+    assert validation_after_expiry['valid'] == False
+```
+
+- **Mocks/stubs/fakes**:
+  - MockDatabase for user credential storage testing
+  - Stub Redis for rate limiting and session management
+  - Fake time provider for token expiration testing
+
+- **Deterministic seeds & time controls**:
+  - Fixed JWT secret for reproducible token generation
+  - Controlled time advancement for expiration testing
+  - Deterministic user IDs and email addresses
+
+- **Expected coverage deltas**:
+  - Lines: +98 lines (JWT handling, password hashing, rate limiting, validation)
+  - Branches: +18 branches (token validation paths, error handling, security checks)
+  - Functions: +7 functions (generate_token, validate_token, hash_password, rate_limit_check)
+```
+
+### docs/claude/tests/specs/market-data/real_time_streaming_tests.md
+```markdown
+# MarketData • Real-time Streaming Tests
+
+- **REQ-IDs covered**: REQ-MARKET-01, REQ-MARKET-02
+- **Given/When/Then scenarios**:
+
+## UT-MARKET-01.1: WebSocket Connection Management
+**Given**: WebSocket server configured for market data streaming
+**When**: establish_websocket_connection() is called
+**Then**: Successfully connect and maintain heartbeat with <100ms latency
+
+```python
+async def test_websocket_connection_establishment():
+    # Arrange
+    websocket_config = {
+        'url': 'ws://localhost:8080/market-stream',
+        'heartbeat_interval': 30,
+        'reconnect_attempts': 3
+    }
+
+    # Act
+    connection = await websocket_manager.establish_connection(websocket_config)
+
+    # Assert
+    assert connection.is_connected == True
+    assert connection.latency_ms < 100
+    assert connection.heartbeat_active == True
+
+    # Cleanup
+    await connection.close()
+```
+
+## UT-MARKET-01.2: Real-time Price Update Processing
+**Given**: Active WebSocket connection with price subscriptions
+**When**: receive_price_update() processes incoming market data
+**Then**: Update in-memory cache and notify subscribers within 50ms
+
+```python
+async def test_real_time_price_updates():
+    # Arrange
+    mock_price_update = {
+        'symbol': 'AAPL',
+        'price': 150.25,
+        'volume': 1000000,
+        'timestamp': '2024-01-15T15:30:00Z'
+    }
+
+    # Act
+    start_time = time.time()
+    await market_stream.receive_price_update(mock_price_update)
+    processing_time = (time.time() - start_time) * 1000
+
+    # Assert
+    assert processing_time < 50  # Under 50ms processing
+    cached_price = await cache_manager.get_price('AAPL')
+    assert cached_price == 150.25
+    assert len(market_stream.subscribers) > 0
+```
+
+## UT-MARKET-02.1: Market Sentiment Aggregation
+**Given**: Multiple sentiment data sources (news, social media)
+**When**: aggregate_market_sentiment() combines sentiment scores
+**Then**: Return weighted sentiment score between -100 and +100
+
+```python
+def test_market_sentiment_aggregation():
+    # Arrange
+    sentiment_sources = {
+        'news_sentiment': {'score': 75, 'weight': 0.6, 'confidence': 0.85},
+        'social_sentiment': {'score': -20, 'weight': 0.3, 'confidence': 0.70},
+        'analyst_sentiment': {'score': 50, 'weight': 0.1, 'confidence': 0.95}
+    }
+
+    # Act
+    aggregated = sentiment_service.aggregate_market_sentiment(sentiment_sources)
+
+    # Assert
+    assert -100 <= aggregated['score'] <= 100
+    assert aggregated['confidence'] > 0.5
+    assert 'weighted_score' in aggregated
+    expected_score = (75*0.6 + (-20)*0.3 + 50*0.1)
+    assert abs(aggregated['weighted_score'] - expected_score) < 0.1
+```
+
+## ET-MARKET-01.1: WebSocket Disconnection Recovery
+**Given**: Active WebSocket connection experiences network interruption
+**When**: handle_disconnection() attempts reconnection
+**Then**: Automatically reconnect with exponential backoff, max 3 attempts
+
+```python
+async def test_websocket_reconnection():
+    # Arrange
+    connection = MockWebSocketConnection(auto_disconnect_after=5)
+    reconnection_attempts = []
+
+    # Act
+    with pytest.raises(ConnectionError):
+        await websocket_manager.handle_disconnection(connection)
+
+    # Assert
+    assert len(websocket_manager.reconnection_log) <= 3
+    assert websocket_manager.reconnection_log[0]['delay'] == 1  # First attempt: 1s
+    assert websocket_manager.reconnection_log[1]['delay'] == 2  # Second attempt: 2s
+    assert websocket_manager.reconnection_log[2]['delay'] == 4  # Third attempt: 4s
+```
+
+## PT-MARKET-01.1: Message Ordering Property
+**Given**: Rapid sequence of price updates for same symbol
+**When**: process_message_queue() handles concurrent updates
+**Then**: Final price reflects the most recent timestamp, no race conditions
+
+```python
+async def test_message_ordering_property():
+    # Arrange
+    price_updates = [
+        {'symbol': 'TSLA', 'price': 200.00, 'timestamp': '2024-01-15T15:30:00Z'},
+        {'symbol': 'TSLA', 'price': 201.50, 'timestamp': '2024-01-15T15:30:02Z'},
+        {'symbol': 'TSLA', 'price': 199.75, 'timestamp': '2024-01-15T15:30:01Z'},  # Out of order
+    ]
+
+    # Act
+    for update in price_updates:
+        await market_stream.process_price_update(update)
+
+    # Assert
+    final_price = await cache_manager.get_price('TSLA')
+    assert final_price == 201.50  # Most recent timestamp wins
+
+    price_history = await cache_manager.get_price_history('TSLA')
+    timestamps = [entry['timestamp'] for entry in price_history]
+    assert timestamps == sorted(timestamps)  # Chronological order maintained
+```
+
+- **Mocks/stubs/fakes**:
+  - MockWebSocketConnection for controllable connection scenarios
+  - Stub external market data providers (Alpha Vantage, yfinance)
+  - Fake network conditions for disconnection/latency testing
+
+- **Deterministic seeds & time controls**:
+  - Fixed timestamps for consistent message ordering tests
+  - Controlled network delay simulation: 10ms, 50ms, 100ms scenarios
+  - Deterministic market data generation with predictable patterns
+
+- **Expected coverage deltas**:
+  - Lines: +127 lines (WebSocket management, sentiment aggregation, message processing)
+  - Branches: +22 branches (reconnection logic, sentiment weighting, error handling)
+  - Functions: +9 functions (connection handlers, sentiment calculators, stream processors)
+```
+
+### docs/claude/tests/specs/stock-analysis/lstm_prediction_tests.md
+```markdown
+# StockAnalysis • LSTM Prediction Tests
+
+- **REQ-IDs covered**: REQ-STOCK-02, REQ-STOCK-04
+- **Given/When/Then scenarios**:
+
+## UT-STOCK-02.1: LSTM Model Training and Prediction
+**Given**: 90 days of preprocessed stock data with technical indicators
+**When**: train_lstm_model() is called with proper parameters
+**Then**: Model achieves >70% directional accuracy on validation set
+
+```python
+def test_lstm_training_accuracy():
+    # Arrange
+    training_data = MockDataFactory.create_lstm_training_data("AAPL", days=365)
+    model_config = {
+        'lookback_window': 90,
+        'prediction_horizon': 5,
+        'epochs': 75,
+        'batch_size': 32
+    }
+
+    # Act
+    model, metrics = lstm_service.train_lstm_model(training_data, model_config)
+
+    # Assert
+    assert metrics['directional_accuracy'] > 0.70
+    assert metrics['mae'] < 0.05  # Mean Absolute Error threshold
+    assert model.get_config()['layers'][0]['units'] == 128  # Architecture validation
+```
+
+## UT-STOCK-02.2: Prediction Confidence Intervals
+**Given**: Trained LSTM model and recent stock data
+**When**: generate_prediction_with_confidence() is called
+**Then**: Return prediction with realistic confidence intervals (80%, 95%)
+
+```python
+def test_prediction_confidence_intervals():
+    # Arrange
+    model = MockModelFactory.create_trained_lstm_model("AAPL")
+    recent_data = MockDataFactory.create_stock_data("AAPL", days=90)
+
+    # Act
+    prediction = lstm_service.generate_prediction_with_confidence(model, recent_data)
+
+    # Assert
+    assert 'price_prediction' in prediction
+    assert 'confidence_80' in prediction
+    assert 'confidence_95' in prediction
+    assert prediction['confidence_95']['lower'] < prediction['confidence_80']['lower']
+    assert prediction['confidence_80']['upper'] < prediction['confidence_95']['upper']
+```
+
+## ET-STOCK-02.1: Model Overfitting Detection
+**Given**: LSTM model trained on limited data
+**When**: validate_model_performance() checks training vs validation metrics
+**Then**: Detect overfitting when validation loss > training loss * 1.5
+
+```python
+def test_overfitting_detection():
+    # Arrange
+    overfitted_model = MockModelFactory.create_overfitted_model("TSLA")
+    validation_data = MockDataFactory.create_stock_data("TSLA", days=30)
+
+    # Act
+    validation_result = lstm_service.validate_model_performance(overfitted_model, validation_data)
+
+    # Assert
+    assert validation_result['is_overfitted'] == True
+    assert validation_result['training_loss'] < validation_result['validation_loss']
+    assert validation_result['recommendation'] == 'retrain_with_regularization'
+```
+
+## PT-STOCK-02.1: Prediction Stability Property
+**Given**: Same input data fed to model multiple times
+**When**: generate_prediction() is called repeatedly
+**Then**: Predictions remain consistent within 2% variance
+
+```python
+def test_prediction_stability():
+    # Arrange
+    model = MockModelFactory.create_deterministic_model("NVDA")
+    input_data = MockDataFactory.create_stock_data("NVDA", days=90)
+    predictions = []
+
+    # Act
+    for _ in range(10):
+        prediction = lstm_service.generate_prediction(model, input_data)
+        predictions.append(prediction['price_prediction'])
+
+    # Assert
+    mean_prediction = np.mean(predictions)
+    for pred in predictions:
+        variance_pct = abs(pred - mean_prediction) / mean_prediction
+        assert variance_pct < 0.02  # Within 2% variance
+```
+
+- **Mocks/stubs/fakes**:
+  - MockModelFactory for pre-trained LSTM models with known characteristics
+  - Stub TensorFlow/Keras for deterministic model behavior
+  - Fake GPU availability for CPU-only testing environments
+
+- **Deterministic seeds & time controls**:
+  - TensorFlow random seed: 123 for reproducible model training
+  - NumPy random seed: 456 for consistent data preprocessing
+  - Fixed validation split: 80/20 train/validation consistently
+
+- **Expected coverage deltas**:
+  - Lines: +89 lines (LSTM training, prediction, validation methods)
+  - Branches: +16 branches (overfitting checks, confidence calculations)
+  - Functions: +5 functions (train_model, predict, validate_performance)
+```
+
+### docs/claude/tests/specs/stock-analysis/technical_analysis_tests.md
+```markdown
+# StockAnalysis • Technical Analysis Tests
+
+- **REQ-IDs covered**: REQ-STOCK-01, REQ-STOCK-02, REQ-STOCK-03
+- **Given/When/Then scenarios**:
+
+## UT-STOCK-01.1: Technical Indicator Calculation Accuracy
+**Given**: Historical OHLCV data for AAPL (90 days)
+**When**: calculate_technical_indicators() is called
+**Then**: Return accurate RSI, MACD, Bollinger Bands within 0.01% tolerance
+
+```python
+def test_technical_indicators_accuracy():
+    # Arrange
+    mock_data = MockDataFactory.create_stock_data("AAPL", days=90)
+    expected_rsi = 45.67  # Pre-calculated reference value
+
+    # Act
+    indicators = technical_service.calculate_technical_indicators(mock_data)
+
+    # Assert
+    assert abs(indicators['rsi'][-1] - expected_rsi) < 0.01
+    assert indicators['macd']['signal'][-1] is not None
+    assert len(indicators['bollinger']['upper']) == len(mock_data)
+```
+
+## UT-STOCK-01.2: Multi-timeframe Analysis Consistency
+**Given**: Stock data across different timeframes (1d, 1w, 1m)
+**When**: analyze_multi_timeframe() is called
+**Then**: Signals maintain logical consistency across timeframes
+
+```python
+def test_multi_timeframe_consistency():
+    # Arrange
+    daily_data = MockDataFactory.create_stock_data("AAPL", timeframe="1d")
+    weekly_data = MockDataFactory.aggregate_to_weekly(daily_data)
+
+    # Act
+    daily_signals = technical_service.analyze_multi_timeframe(daily_data, "1d")
+    weekly_signals = technical_service.analyze_multi_timeframe(weekly_data, "1w")
+
+    # Assert
+    assert daily_signals['trend'] in ['bullish', 'bearish', 'neutral']
+    assert weekly_signals['strength'] >= daily_signals['strength'] - 0.1
+```
+
+## ET-STOCK-01.1: Extreme Market Conditions Handling
+**Given**: Market crash scenario with -20% daily drop
+**When**: calculate_technical_indicators() processes extreme data
+**Then**: Handle gracefully without mathematical errors or infinite values
+
+```python
+def test_market_crash_handling():
+    # Arrange
+    crash_data = MockDataFactory.create_market_crash_scenario("SPY")
+
+    # Act & Assert
+    indicators = technical_service.calculate_technical_indicators(crash_data)
+
+    assert not any(math.isinf(val) for val in indicators['rsi'])
+    assert not any(math.isnan(val) for val in indicators['macd']['histogram'])
+    assert indicators['volatility'] > 0.5  # High volatility expected
+```
+
+- **Mocks/stubs/fakes**:
+  - MockDataFactory for deterministic OHLCV data generation
+  - Stub external price data APIs (yfinance, Alpha Vantage)
+  - Fake time provider for consistent timestamp testing
+
+- **Deterministic seeds & time controls**:
+  - Random seed: 42 for reproducible price movements
+  - Fixed timestamp: 2024-01-15T10:00:00Z for all test scenarios
+  - Controlled market hours: 9:30 AM - 4:00 PM EST
+
+- **Expected coverage deltas**:
+  - Lines: +156 lines (calculate_technical_indicators, multi_timeframe_analysis)
+  - Branches: +24 branches (error handling, timeframe logic)
+  - Functions: +8 functions (all technical analysis methods)
+```
+
+<<<DOCS_INPUT_END>>>
+
+OBJECTIVE
+- Implement code, tests, CI, DB schema/migrations/seeds, and UI skeleton strictly per the above docs. Every public function/endpoint/state transition must have positive/negative/edge tests. Contracts must have integration tests. E2E must cover golden/failure/retry/timeout/idempotency/a11y. Achieve 100% coverage gates locally and in CI.
+
+OUTPUT FORMAT (STRICT)
+1) File plan: bullet list of every file you create/update with one-line purpose.
+2) Full file contents for each path in fenced code blocks. No placeholders, no “…”; everything must be runnable.
+3) Final checklist with pass/fail for:
+   - All specs implemented
+   - 100% unit/branch/integration coverage
+   - E2E scenarios implemented (with traces/videos)
+   - DB migrations + seeds wired in CI
+   - Makefile scripts preserved and working
+
+IMPLEMENTATION TARGETS (exact paths)
+- backend/app/** (FastAPI routers, services, models, deps, auth, caching, rate-limit, AV fallback adapter)
+- backend/app/alembic/** (migrations) and/or database/migrations/0001_initial.sql
+- backend/tests/unit/** and backend/tests/integration/**
+- frontend/src/** (components, pages, services, hooks, contexts, types)
+- frontend/tests/unit/** and frontend/tests/integration/**
+- tests/e2e/** (Playwright specs, fixtures)
+- database/schema.sql, database/seed/dev.sql
+- docs/claude/tests/config/coverage.md (implemented as tooling/config files below)
+- .github/workflows/ci.yml (coverage gates 100%; services: postgres, redis)
+- jest.config.(ts|js), tsconfig.json, playwright.config.(ts|js)
+- pyproject.toml or requirements.txt + pytest.ini + coverage config (branch=true, fail-under=100)
+- .env.example (safe defaults; no secrets)
+- README.md (how to run app/tests/coverage; links to docs)
+
+TEST & COVERAGE REQUIREMENTS (NON-NEGOTIABLE)
+- PyTest command must pass with 100%: 
+  pytest -q --cov=backend/app --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+- Jest command must pass with 100% thresholds (branches/statements/functions/lines) and produce lcov + html.
+- Playwright runs against local app, with retries, traces, video-on-failure, and accessibility scan. Include scripts to start/stop app for CI.
+- Contract tests: UI↔API, API↔DB/Redis, yfinance↔AlphaVantage adapter seam.
+- Deterministic seeds, fake timers/clocks, controlled randomness. No flaky tests.
+
+CI/CD (GITHUB ACTIONS)
+- Matrix: Python 3.11+, Node 18+ (Linux). Cache deps.
+- Services: postgres:14, redis:7 with health checks.
+- Steps: checkout → setup/caches → install → lint/typecheck → backend unit (100%) → backend integration (100%) → frontend unit/integration (100%) → spin app → Playwright e2e → upload coverage artifacts (HTML/LCOV/JUnit). Fail build on <100%.
+
+UI: PERPLEXITY FINANCE PLUS
+- Implement a robust skeleton that fulfills docs/ui/PerplexityFinancePlus.md: global search+compare, narratives with rationale transparency, audit trails, hypothesis testing, keyboard-first, a11y (WCAG AA), perf budgets. Provide components, routes, loading/error/empty states, i18n hooks.
+
+CONSTRAINTS
+- Match repo structure and Makefile commands; don’t break existing workflows.
+- Use environment variables via .env.example; never commit secrets.
+- Keep error handling, logging, and rate limiting consistent with docs.
+- Use relati
+END_PART_AF

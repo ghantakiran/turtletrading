@@ -1,0 +1,437 @@
+# Claude Implementation Prompt (Part AA)
+
+INSTRUCTIONS
+- Paste this part first if its name is part_aa, then proceed alphabetically.
+- Keep model memory between parts.
+- Do not regenerate content from earlier parts; continue appending outputs.
+
+BEGIN_PART_AA
+
+You are a principal engineer. Implement the TurtleTrading system exactly as specified in the split docs. Produce complete, runnable code and configurations with 100% unit, branch, and integration coverage, plus Playwright E2E. Do not return analysis—return the file plan and full file contents only.
+
+STACK = python-fastapi-sqlalchemy-pytest-coverage + react18-typescript-jest-rtl + playwright + postgres + redis
+REPO CONVENTIONS (must honor):
+- Backend: FastAPI (async), SQLAlchemy, Alembic, Pydantic, JWT, Redis cache & rate-limit, LSTM boundary (TensorFlow later), yfinance primary + Alpha Vantage fallback (completed).
+- Frontend: React 18 + TypeScript, Tailwind, React Query, React Router, RTL, Socket.io, Recharts.
+- Infra: Docker/Compose, Nginx, Makefile targets (make dev/test/test-e2e/etc.).
+- Tests: Backend PyTest; Frontend Jest+RTL; E2E Playwright in root `tests/`.
+- DB: Postgres; Redis. Deterministic seeds for CI/local.
+- Docs: Integration home `docs/claude/Claude.md`; modules under `docs/claude/modules/`.
+
+INPUT (paste the results of the split here)
+<<<DOCS_INPUT_START>>>
+File plan:
+- docs/claude/Claude.md: Integration/orchestration home and contracts
+- docs/claude/modules/Claude.Authentication.md: Auth, JWT, permissions, rate limiting
+- docs/claude/modules/Claude.DataSources.md: External data sources, fallback, rate limiting, health
+- docs/claude/modules/Claude.Infrastructure.md: Docker, Postgres, Redis, monitoring, backups
+- docs/claude/modules/Claude.MarketData.md: WebSocket streaming, market breadth, sentiment
+- docs/claude/modules/Claude.StockAnalysis.md: Technicals, LSTM, multi-factor scoring
+- docs/claude/modules/Claude.Testing.md: Test strategy, coverage enforcement
+- docs/claude/modules/Claude.UserInterface.md: React app architecture and UI contracts
+- docs/claude/tests/config/coverage.md: Coverage commands and CI gates (100%)
+- docs/claude/tests/integration/real_time_data_flow.md: Real-time streaming integration specs
+- docs/claude/tests/integration/stock_analysis_flow.md: Stock analysis integration specs
+- docs/claude/tests/specs/authentication/jwt_security_tests.md: JWT security unit/edge/property tests
+- docs/claude/tests/specs/market-data/real_time_streaming_tests.md: Market data unit/edge/property tests
+- docs/claude/tests/specs/stock-analysis/lstm_prediction_tests.md: LSTM unit/edge/property tests
+- docs/claude/tests/specs/stock-analysis/technical_analysis_tests.md: Technicals unit/edge/property tests
+
+### docs/claude/Claude.md
+```markdown
+# Claude (Integration & Orchestration)
+
+## System Overview & Architecture Diagram
+
+**TurtleTrading** is an AI-powered stock market analysis platform that democratizes institutional-grade trading tools for retail investors. The platform combines real-time market data, LSTM neural network predictions, sentiment analysis, and comprehensive technical indicators through a modular architecture design.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        TurtleTrading Platform                   │
+│  Mission: Empower traders with institutional-grade AI insights  │
+└─────────────────────────────────────────────────────────────────┘
+                                   │
+          ┌────────────────────────┼────────────────────────┐
+          ▼                        ▼                        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   UserInterface │────│   Authentication│────│   Infrastructure│
+│   (React/TS)    │    │   (JWT/Security) │    │   (Docker/DB)   │
+│ • Vite Build    │    │ • Rate Limiting  │    │ • PostgreSQL    │
+│ • Tailwind CSS  │    │ • Session Mgmt   │    │ • Redis Cache   │
+│ • State Mgmt    │    │ • Password Hash  │    │ • Docker Compose│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+          │                        │                        │
+          ▼                        ▼                        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   StockAnalysis │────│   MarketData    │────│   DataSources   │
+│   (LSTM/TA)     │    │   (WebSocket)   │    │   (APIs/Cache)  │
+│ • 15+ Indicators│    │ • Real-time     │    │ • yfinance      │
+│ • LSTM Predict  │    │ • Sentiment     │    │ • Alpha Vantage │
+│ • Risk Analysis │    │ • Broadcasting  │    │ • Fallback Chain│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+          │                        │                        │
+          └────────────────────────┼────────────────────────┘
+                                   ▼
+                        ┌─────────────────┐
+                        │     Testing     │
+                        │   (100% Cov)    │
+                        │ • Unit Tests    │
+                        │ • Integration   │
+                        │ • E2E Testing   │
+                        └─────────────────┘
+```
+
+## Module Registry with Links
+
+### Core Business Modules
+- **[StockAnalysis](./modules/Claude.StockAnalysis.md)** → Stock data analysis, technical indicators, LSTM neural network predictions, risk assessment
+- **[MarketData](./modules/Claude.MarketData.md)** → Real-time market data streaming, sentiment analysis, WebSocket management, market breadth
+- **[Authentication](./modules/Claude.Authentication.md)** → JWT authentication, user management, security policies, rate limiting, session management
+
+### Platform Modules
+- **[UserInterface](./modules/Claude.UserInterface.md)** → React frontend, TypeScript, Tailwind CSS, state management, responsive design
+- **[DataSources](./modules/Claude.DataSources.md)** → External API integrations, fallback mechanisms, caching strategy, rate limiting
+- **[Infrastructure](./modules/Claude.Infrastructure.md)** → Docker orchestration, PostgreSQL, Redis, monitoring, deployment automation
+- **[Testing](./modules/Claude.Testing.md)** → Comprehensive testing framework, 100% coverage enforcement, CI/CD integration
+
+## Cross-Module Contracts & Versioning
+
+### API Contracts (Producer ↔ Consumer)
+| Producer | Consumer | Contract | Version |
+|----------|----------|----------|---------|
+| StockAnalysis | UserInterface | `/api/v1/stocks/{symbol}/analysis` → `AnalysisResponse` | v1.0 |
+| MarketData | StockAnalysis | `WebSocket:price_update` → `PriceUpdateEvent` | v1.0 |
+| Authentication | All Modules | `JWT Bearer Token` → `UserContext` | v1.0 |
+| DataSources | StockAnalysis | `get_stock_data(symbol)` → `StockData | null` | v1.0 |
+| Infrastructure | All Modules | Database connections, Redis cache, monitoring | v1.0 |
+
+### Data Flow Contracts
+```typescript
+// Core data contracts between modules
+interface StockData {
+  symbol: string;
+  price: number;
+  volume: number;
+  timestamp: datetime;
+  source: 'yfinance' | 'alpha_vantage';
+}
+
+interface AnalysisResult {
+  technical_score: number;
+  lstm_prediction: LSTMPrediction;
+  sentiment_score: number;
+  confidence: number;
+  recommendation: 'BUY' | 'SELL' | 'HOLD';
+}
+
+interface UserContext {
+  user_id: string;
+  subscription_tier: 'free' | 'pro' | 'enterprise';
+  permissions: string[];
+  session_expires_at: datetime;
+}
+```
+
+## Message/Data Flow (Sequence Diagrams)
+
+### Stock Analysis Request Flow
+```
+User → UserInterface → Authentication → StockAnalysis → DataSources → External API
+                           ↓              ↓              ↓
+                      JWT Validation → Technical Analysis → Cache/Fallback
+                           ↓              ↓              ↓
+User ← UserInterface ← AnalysisResult ← LSTM Prediction ← Historical Data
+```
+
+### Real-time Data Streaming Flow
+```
+External API → DataSources → MarketData → WebSocket → UserInterface → User
+      ↓            ↓           ↓           ↓           ↓
+  Rate Limit → Cache Update → Broadcast → State Update → UI Render
+```
+
+## Orchestration Patterns & Error Propagation
+
+### Error Handling Hierarchy
+1. **Component-level**: UI error boundaries isolate failures
+2. **Service-level**: API error responses with proper HTTP status codes
+3. **Integration-level**: Circuit breakers and fallback mechanisms
+4. **System-level**: Global error monitoring and alerting
+
+### Retry Policies
+- **DataSources**: 3 retries with exponential backoff (1s, 2s, 4s)
+- **Authentication**: No retries for security (fail fast)
+- **MarketData**: WebSocket auto-reconnection with increasing delays
+- **StockAnalysis**: Retry on network errors, fail on validation errors
+
+### Circuit Breaker Patterns
+- **External APIs**: Open circuit after 5 consecutive failures
+- **Database**: Connection pool management with health checks
+- **Cache**: Graceful degradation to direct data sources
+
+## Non-Functional Requirements
+
+### Reliability
+- **Uptime SLO**: 99.9% availability (8.76 hours downtime/year)
+- **Data Consistency**: Eventual consistency for market data, strong consistency for user data
+- **Backup & Recovery**: Daily automated backups with 4-hour RTO
+
+### Performance
+- **API Response**: <500ms for 95th percentile
+- **WebSocket Latency**: <100ms for real-time updates
+- **Database Queries**: <50ms for 90th percentile
+- **Frontend Load**: <2 seconds on 3G networks
+
+### Security
+- **Authentication**: JWT with 15-minute expiry + refresh tokens
+- **Rate Limiting**: 1000 requests/hour per user, 100/minute burst
+- **Data Encryption**: AES-256 at rest, TLS 1.3 in transit
+- **Input Validation**: Comprehensive sanitization and validation
+
+### Compliance
+- **Data Privacy**: GDPR/CCPA compliant data handling
+- **Financial Regulations**: SEC compliance for investment advice disclaimers
+- **Security Standards**: OWASP Top 10 mitigation
+
+## Operational Runbooks
+
+### Startup Sequence
+1. Infrastructure: PostgreSQL → Redis → Nginx
+2. Backend: Database migrations → FastAPI server
+3. Frontend: Vite build → Static file serving
+4. Services: External API health checks → WebSocket initialization
+
+### Shutdown Sequence
+1. Stop accepting new requests (graceful degradation)
+2. Complete in-flight requests (30-second timeout)
+3. Close WebSocket connections
+4. Flush cache and close database connections
+
+### Backup Procedures
+```bash
+# Daily automated backup
+pg_dump turtletrading > backup_$(date +%Y%m%d).sql
+aws s3 cp backup_$(date +%Y%m%d).sql s3://turtletrading-backups/
+
+# Redis cache backup
+redis-cli BGSAVE
+cp /var/lib/redis/dump.rdb backup_redis_$(date +%Y%m%d).rdb
+```
+
+## TDD Integration Plan
+
+### Contract Tests Matrix (Producer ↔ Consumer)
+| Test Type | Producer | Consumer | Validates |
+|-----------|----------|----------|-----------|
+| Contract | StockAnalysis API | UserInterface | Response schema, error codes |
+| Contract | MarketData WebSocket | UserInterface | Message format, event types |
+| Contract | DataSources | StockAnalysis | Data format, null handling |
+| Contract | Authentication | All Modules | JWT format, permissions |
+
+### End-to-End Test Flows
+- **[Stock Analysis Flow](./tests/integration/stock_analysis_flow.md)** → Complete user analysis journey
+- **[Real-time Data Flow](./tests/integration/real_time_data_flow.md)** → WebSocket streaming validation
+- **User Registration Flow** → Account creation and verification
+- **Authentication Flow** → Login, logout, token refresh
+
+### Failure Injection & Chaos Tests
+- **Network Partitions**: Simulate network failures between modules
+- **Database Failures**: Test failover and recovery procedures
+- **External API Outages**: Validate fallback mechanisms
+- **High Load**: Stress test with 10x normal traffic
+- **Security Attacks**: SQL injection, XSS, CSRF validation
+
+### Rollback & Idempotency Checks
+- **Database Migrations**: Reversible migration scripts
+- **API Changes**: Backward compatibility validation
+- **Cache Invalidation**: Consistent cache clearing
+- **User Actions**: Idempotent operations (duplicate prevention)
+
+## CI/CD
+
+### How to Run All Tests
+```bash
+# Backend tests with coverage
+cd backend && pytest --cov=app --cov-report=xml --cov-fail-under=100
+
+# Frontend tests with coverage
+cd frontend && npm run test:coverage -- --run
+
+# E2E tests
+cd tests && npm run test:e2e
+
+# Integration tests
+make test:integration
+
+# Complete test suite
+make test:all
+```
+
+### Coverage Thresholds = 100% (branch/line/function)
+- **Backend**: pytest-cov with 100% line, branch, function coverage
+- **Frontend**: Vitest with v8 coverage provider, 100% enforcement
+- **E2E**: Playwright with code coverage collection
+- **Integration**: Combined coverage reporting across all layers
+
+### Gates that Fail the Build if Thresholds are Not Met
+
+#### GitHub Actions Enforcement
+```yaml
+- name: Enforce Backend Coverage
+  run: pytest --cov-fail-under=100
+
+- name: Enforce Frontend Coverage
+  run: npm run coverage:check # Fails if < 100%
+
+- name: Enforce E2E Coverage
+  run: npm run test:e2e:coverage:check
+```
+
+#### Pre-commit Hooks
+```bash
+#!/bin/bash
+# Fail commit if coverage below 100%
+coverage report --fail-under=100 || exit 1
+npm run coverage:check || exit 1
+```
+
+#### Coverage Reporting
+- **HTML Reports**: Detailed line-by-line coverage analysis
+- **Badge Generation**: Coverage badges for README
+- **Trend Tracking**: Coverage metrics over time
+- **Alert Integration**: Slack notifications for coverage drops
+
+### Detailed Coverage Configuration
+See **[Coverage Configuration](./tests/config/coverage.md)** for:
+- Tool-specific commands (pytest, vitest, playwright)
+- CI configuration files
+- Local development workflows
+- Debugging guidance for missed coverage
+```
+
+### docs/claude/modules/Claude.Authentication.md
+```markdown
+# Claude.Authentication
+
+- **Purpose**: Provide comprehensive user authentication, authorization, session management, and security policies with JWT token handling, rate limiting, and multi-tier access control for secure trading platform access
+- **Scope (in/out)**:
+  - **In**: JWT token generation/validation, user registration/login, password hashing, session management, rate limiting, permission validation, security policies, multi-factor authentication
+  - **Out**: User interface rendering (handled by UserInterface), business logic processing (handled by StockAnalysis/MarketData), data storage implementation (handled by Infrastructure)
+- **Public API (signatures, inputs/outputs, errors)**:
+  - `AuthService.register_user(email, password, profile) → UserAccount | ValidationError`
+  - `AuthService.authenticate_user(email, password) → AuthResult | AuthenticationError`
+  - `AuthService.generate_tokens(user_id) → TokenPair | TokenError`
+  - `AuthService.refresh_token(refresh_token) → TokenPair | InvalidTokenError`
+  - `AuthService.validate_jwt(token) → UserContext | TokenValidationError`
+  - `RateLimitService.check_rate_limit(user_id, endpoint) → RateLimitResult | None`
+  - `PermissionService.check_permission(user_context, resource) → PermissionResult | None`
+- **Data contracts (schemas, invariants)**:
+  - UserAccount: user_id(UUID), email(str, unique), password_hash(str), subscription_tier('free'|'pro'|'enterprise'), created_at(datetime), is_active(bool)
+  - AuthResult: success(bool), user_context(UserContext|None), access_token(str|None), refresh_token(str|None), expires_in(int)
+  - UserContext: user_id(UUID), email(str), subscription_tier(str), permissions(List[str]), session_expires_at(datetime), rate_limit_remaining(int)
+  - TokenPair: access_token(str, 15min expiry), refresh_token(str, 7day expiry), token_type('Bearer'), expires_in(int)
+  - RateLimitResult: allowed(bool), remaining(int≥0), reset_time(datetime), tier_limit(int>0)
+- **Dependencies (internal/external)**:
+  - **Internal**: Infrastructure (PostgreSQL user storage, Redis sessions), UserInterface (auth status), MarketData (user subscriptions), StockAnalysis (user preferences)
+  - **External**: bcrypt, PyJWT, passlib, python-multipart, redis, sqlalchemy, pydantic, email-validator
+- **State & concurrency model**: Stateless JWT validation with Redis session storage, async password hashing, concurrent rate limiting with atomic Redis operations
+- **Failure modes & retries**: No retries for authentication (security), session cleanup on token expiry, password reset via email, account lockout after failed attempts
+- **Performance/SLOs**: <100ms token validation, <200ms login/registration, <50ms rate limit checks, 99.9% authentication success for valid credentials
+- **Security/permissions**: bcrypt password hashing, JWT with strong secrets, secure session cookies, rate limiting per user/IP, input validation, SQL injection prevention
+- **Observability (logs/metrics/traces)**: Authentication success/failure rates, token generation/validation metrics, rate limit violations, session durations, security event logging
+- **Change risks & migration notes**: JWT secret rotation requires careful token migration, password policy changes need user notification, rate limit updates require cache invalidation
+
+## TDD: Requirements → Tests
+
+### REQ-AUTH-01: User registration and authentication with secure password handling and session management
+- **Unit tests**:
+  - UT-AUTH-01.1: Given valid email/password When register_user() Then create account with hashed password and return user_id
+  - UT-AUTH-01.2: Given valid credentials When authenticate_user() Then return JWT tokens and user context
+  - UT-AUTH-01.3: Given user session When validate_jwt() Then verify token signature and return user permissions
+- **Edge/negative/property tests**:
+  - ET-AUTH-01.1: Given duplicate email When register_user() Then return ValidationError with clear message
+  - ET-AUTH-01.2: Given invalid password When authenticate_user() Then return AuthenticationError and log attempt
+  - PT-AUTH-01.1: Property: passwords always hashed with bcrypt, JWT tokens contain valid claims, user_ids are unique UUIDs
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock bcrypt with controlled hash generation for testing
+  - Stub JWT with deterministic token generation
+  - Fake Redis sessions for session management testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: register_user(), authenticate_user(), hash_password(), validate_jwt(), create_session()
+
+### REQ-AUTH-02: JWT token management with access/refresh token rotation and secure validation
+- **Unit tests**:
+  - UT-AUTH-02.1: Given authenticated user When generate_tokens() Then return access token (15min) and refresh token (7day)
+  - UT-AUTH-02.2: Given valid refresh token When refresh_token() Then return new token pair and invalidate old refresh token
+  - UT-AUTH-02.3: Given expired access token When validate_jwt() Then return TokenValidationError with expiry details
+- **Edge/negative/property tests**:
+  - ET-AUTH-02.1: Given malformed JWT When validate_jwt() Then reject with proper error message and security logging
+  - ET-AUTH-02.2: Given revoked refresh token When refresh_token() Then return InvalidTokenError and require re-authentication
+  - PT-AUTH-02.1: Property: access tokens expire in 15 minutes, refresh tokens unique per user, token revocation is immediate
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock JWT library with controllable expiration times
+  - Stub Redis for token blacklist management
+  - Fake system clock for token expiry testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: generate_tokens(), refresh_token(), validate_jwt(), revoke_token(), check_blacklist()
+
+### REQ-AUTH-03: Rate limiting and permission management with tier-based access control and security policies
+- **Unit tests**:
+  - UT-AUTH-03.1: Given user tier When check_rate_limit() Then enforce tier-specific limits (free: 100/hour, pro: 1000/hour, enterprise: unlimited)
+  - UT-AUTH-03.2: Given user permissions When check_permission() Then validate access to premium features based on subscription
+  - UT-AUTH-03.3: Given security policy When validate_request() Then enforce IP restrictions and suspicious activity detection
+- **Edge/negative/property tests**:
+  - ET-AUTH-03.1: Given rate limit exceeded When make_request() Then return 429 status with reset time headers
+  - ET-AUTH-03.2: Given subscription downgrade When access_premium_feature() Then revoke permissions immediately
+  - PT-AUTH-03.1: Property: rate limits reset at specified intervals, permissions consistent with subscription tier, security logs immutable
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock Redis atomic operations for rate limiting
+  - Stub subscription service for tier validation
+  - Fake IP geolocation for security policy testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: check_rate_limit(), check_permission(), validate_subscription(), enforce_security_policy()
+
+### Traceability Matrix: REQ-IDs ↔ Tests
+| REQ-ID | Unit Tests | Edge Tests | Property Tests | Integration Tests |
+|--------|------------|------------|----------------|-------------------|
+| REQ-AUTH-01 | UT-AUTH-01.1-3 | ET-AUTH-01.1-2 | PT-AUTH-01.1 | IT-AUTH-01 |
+| REQ-AUTH-02 | UT-AUTH-02.1-3 | ET-AUTH-02.1-2 | PT-AUTH-02.1 | IT-AUTH-02 |
+| REQ-AUTH-03 | UT-AUTH-03.1-3 | ET-AUTH-03.1-2 | PT-AUTH-03.1 | IT-AUTH-03 |
+
+## Implementation Guidance (after specs)
+
+### Algorithms/Flow
+1. **User Registration**: validate_input() → check_email_unique() → hash_password() → create_user_record() → generate_tokens() → setup_session()
+2. **Authentication**: validate_credentials() → verify_password() → check_account_status() → generate_tokens() → create_session() → return_auth_result()
+3. **Token Validation**: parse_jwt() → verify_signature() → check_expiry() → validate_claims() → check_blacklist() → return_user_context()
+
+### Pseudocode (reference)
+```python
+async def authenticate_user(email: str, password: str) -> AuthResult:
+    # Input validation
+    if not validate_email(email) or not password:
+        return AuthResult(success=False, error="Invalid credentials format")
+
+    # Rate limiting check
+    rate_limit = await rate_limiter.check_login_attempts(email)
+    if not rate_limit.allowed:
+        await security_logger.log_rate_limit_violation(email, "login")
+        return AuthResult(success=False, error="Too many login attempts")
+
+    # Fetch user from database
+    user = await user_repository.get_by_email(email)
+    if not user or not user.is_active:
+        await security_logger.log_failed_login(email, "user_not_found")
+        return AuthResult(success=False, error="Invalid credentials")
+
+    # Verify password
+    is_valid = await bcrypt.verify(password, user.password_hash)
+    if not is_valid:
+        await security_logger.log_failed_login(email, "invalid_password")
+        await rate_limiter.increment_failed_attempts(email)
+        return AuthResult(success=False, error="Invalid credentials")
+
+    # Generate JWT tokens
+    token_payload = {
+    
+END_PART_AA

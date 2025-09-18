@@ -1,0 +1,464 @@
+# Claude Implementation Prompt (Part AB)
+
+INSTRUCTIONS
+- Paste this part first if its name is part_aa, then proceed alphabetically.
+- Keep model memory between parts.
+- Do not regenerate content from earlier parts; continue appending outputs.
+
+BEGIN_PART_AB
+
+    "user_id": str(user.user_id),
+        "email": user.email,
+        "subscription_tier": user.subscription_tier,
+        "permissions": get_user_permissions(user.subscription_tier),
+        "iat": datetime.utcnow(),
+        "exp": datetime.utcnow() + timedelta(minutes=15)
+    }
+
+    access_token = jwt.encode(token_payload, JWT_SECRET, algorithm="HS256")
+    refresh_token = await generate_refresh_token(user.user_id)
+
+    # Create session
+    session_data = {
+        "user_id": str(user.user_id),
+        "login_time": datetime.utcnow().isoformat(),
+        "ip_address": get_client_ip(),
+        "user_agent": get_user_agent()
+    }
+    await redis.setex(f"session:{user.user_id}", 3600, json.dumps(session_data))
+
+    # Update user last login
+    await user_repository.update_last_login(user.user_id)
+
+    # Log successful authentication
+    await security_logger.log_successful_login(user.email, get_client_ip())
+
+    return AuthResult(
+        success=True,
+        user_context=UserContext(
+            user_id=user.user_id,
+            email=user.email,
+            subscription_tier=user.subscription_tier,
+            permissions=get_user_permissions(user.subscription_tier),
+            session_expires_at=datetime.utcnow() + timedelta(minutes=15),
+            rate_limit_remaining=rate_limit.remaining
+        ),
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=900  # 15 minutes
+    )
+
+async def validate_jwt(token: str) -> Optional[UserContext]:
+    try:
+        # Parse and verify JWT
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+
+        # Check token blacklist
+        is_blacklisted = await redis.get(f"blacklist:{token}")
+        if is_blacklisted:
+            raise TokenValidationError("Token has been revoked")
+
+        # Validate user still exists and is active
+        user = await user_repository.get_by_id(payload["user_id"])
+        if not user or not user.is_active:
+            raise TokenValidationError("User account is inactive")
+
+        # Check subscription tier for permission changes
+        current_permissions = get_user_permissions(user.subscription_tier)
+        if current_permissions != payload.get("permissions", []):
+            # Permissions changed, require re-authentication
+            raise TokenValidationError("Permissions have changed, please re-authenticate")
+
+        # Return user context
+        return UserContext(
+            user_id=UUID(payload["user_id"]),
+            email=payload["email"],
+            subscription_tier=user.subscription_tier,
+            permissions=current_permissions,
+            session_expires_at=datetime.fromtimestamp(payload["exp"]),
+            rate_limit_remaining=await get_rate_limit_remaining(payload["user_id"])
+        )
+
+    except jwt.ExpiredSignatureError:
+        raise TokenValidationError("Token has expired")
+    except jwt.InvalidTokenError as e:
+        await security_logger.log_invalid_token_attempt(token, str(e))
+        raise TokenValidationError("Invalid token")
+```
+
+### Error Handling & Retries
+- **Authentication failures**: No retries for security, log all attempts, implement account lockout
+- **Token validation errors**: Immediate rejection, security logging, force re-authentication
+- **Database connection issues**: Graceful degradation, cached user validation for short periods
+- **Rate limiting**: Clear error messages with reset times, distinguish between user and IP limits
+
+### Config/flags
+```python
+AUTH_CONFIG = {
+    "JWT_CONFIG": {
+        "SECRET_KEY": "your-256-bit-secret",  # From environment
+        "ALGORITHM": "HS256",
+        "ACCESS_TOKEN_EXPIRE_MINUTES": 15,
+        "REFRESH_TOKEN_EXPIRE_DAYS": 7,
+        "ISSUER": "turtletrading.com",
+        "AUDIENCE": "turtletrading-api"
+    },
+    "PASSWORD_POLICY": {
+        "MIN_LENGTH": 8,
+        "MAX_LENGTH": 128,
+        "REQUIRE_UPPERCASE": True,
+        "REQUIRE_LOWERCASE": True,
+        "REQUIRE_DIGITS": True,
+        "REQUIRE_SPECIAL_CHARS": True,
+        "BCRYPT_ROUNDS": 12
+    },
+    "RATE_LIMITS": {
+        "LOGIN_ATTEMPTS": {
+            "free": {"limit": 5, "window": 300},      # 5 attempts per 5 minutes
+            "pro": {"limit": 10, "window": 300},      # 10 attempts per 5 minutes
+            "enterprise": {"limit": 20, "window": 300} # 20 attempts per 5 minutes
+        },
+        "API_REQUESTS": {
+            "free": {"limit": 100, "window": 3600},     # 100 requests per hour
+            "pro": {"limit": 1000, "window": 3600},     # 1000 requests per hour
+            "enterprise": {"limit": -1, "window": 3600} # Unlimited
+        },
+        "REGISTRATION": {"limit": 3, "window": 86400}   # 3 registrations per day per IP
+    },
+    "SECURITY_POLICIES": {
+        "SESSION_TIMEOUT": 3600,  # 1 hour
+        "MAX_CONCURRENT_SESSIONS": 5,
+        "REQUIRE_EMAIL_VERIFICATION": True,
+        "ENABLE_MFA": False,  # Future implementation
+        "PASSWORD_RESET_EXPIRE_MINUTES": 30,
+        "ACCOUNT_LOCKOUT_ATTEMPTS": 10,
+        "ACCOUNT_LOCKOUT_DURATION": 1800  # 30 minutes
+    },
+    "SUBSCRIPTION_PERMISSIONS": {
+        "free": [
+            "view_basic_charts",
+            "access_basic_indicators",
+            "create_watchlist"
+        ],
+        "pro": [
+            "view_basic_charts", "access_basic_indicators", "create_watchlist",
+            "view_advanced_charts",
+            "access_all_indicators",
+            "lstm_predictions",
+            "sentiment_analysis",
+            "real_time_data"
+        ],
+        "enterprise": [
+            "view_basic_charts", "access_basic_indicators", "create_watchlist",
+            "view_advanced_charts", "access_all_indicators", "lstm_predictions",
+            "sentiment_analysis", "real_time_data",
+            "api_access",
+            "bulk_analysis",
+            "custom_indicators",
+            "priority_support"
+        ]
+    }
+}
+```
+```
+
+### docs/claude/modules/Claude.DataSources.md
+```markdown
+# Claude.DataSources
+
+- **Purpose**: Provide reliable multi-source data integration with fallback mechanisms for market data, news, and external API management
+- **Scope (in/out)**:
+  - **In**: yfinance integration, Alpha Vantage fallback, NewsAPI, external API rate limiting, data source health monitoring, API response caching
+  - **Out**: Data processing/analysis (handled by StockAnalysis/MarketData), user management (handled by Authentication), UI presentation (handled by UserInterface)
+- **Public API (signatures, inputs/outputs, errors)**:
+  - `DataSourceManager.get_price_data(symbol) → StockPrice | None`
+  - `DataSourceManager.get_historical_data(symbol, period) → DataFrame | None`
+  - `AlphaVantageService.get_quote(symbol) → StockPrice | APIError`
+  - `RateLimiter.check_limit(api_name, key) → boolean`
+  - `HealthMonitor.check_source_health(source) → HealthStatus`
+- **Data contracts (schemas, invariants)**:
+  - StockPrice: symbol(str), current_price(float>0), volume(int≥0), market_cap(int≥0), timestamp(datetime)
+  - APIResponse: status_code(int), data(dict), headers(dict), response_time_ms(int>0), source(str)
+  - HealthStatus: source(str), is_healthy(boolean), last_check(datetime), error_count(int≥0), uptime_percentage(0≤float≤100)
+  - RateLimit: api_name(str), requests_made(int≥0), limit(int>0), reset_time(datetime)
+- **Dependencies (internal/external)**:
+  - **Internal**: Infrastructure (Redis for rate limiting and caching), StockAnalysis (price data consumer), MarketData (real-time updates)
+  - **External**: yfinance, alpha-vantage, newsapi-python, requests, aiohttp, pandas
+- **State & concurrency model**: Stateless data fetching with Redis-based rate limiting, concurrent API calls with asyncio, connection pooling for HTTP clients
+- **Failure modes & retries**: Primary API failure → secondary API → cached data → error response; 3 retries with exponential backoff for network errors
+- **Performance/SLOs**: <500ms for price data, <1s for historical data, <2s for news data, 99% API success rate, <10ms rate limit checks
+- **Security/permissions**: API key management via environment variables, request signing where required, no sensitive data logged, IP-based rate limiting
+- **Observability (logs/metrics/traces)**: API response times, success/failure rates, rate limit usage, cache hit ratios, data source health metrics
+- **Change risks & migration notes**: API provider changes require adapter updates; rate limit changes need configuration updates; new data sources need health monitoring integration
+
+## TDD: Requirements → Tests
+
+### REQ-DATA-01: Multi-source data fetching with automatic fallback chains
+- **Unit tests**:
+  - UT-DATA-01.1: Given yfinance available When get_price_data("AAPL") Then return StockPrice from primary source
+  - UT-DATA-01.2: Given yfinance timeout When get_price_data("AAPL") Then fallback to Alpha Vantage successfully
+  - UT-DATA-01.3: Given all sources fail When get_price_data("AAPL") Then return cached data or None
+- **Edge/negative/property tests**:
+  - ET-DATA-01.1: Given malformed API response When parse_response() Then handle gracefully and try next source
+  - ET-DATA-01.2: Given network partition When fetch_data() Then timeout appropriately and fallback
+  - PT-DATA-01.1: Property: fallback chain always preserves data contract, response time increases with fallback depth
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock yfinance with controllable timeout/success scenarios
+  - Stub Alpha Vantage API with rate limiting simulation
+  - Fake network conditions for fallback testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: DataSourceManager, get_price_data(), fallback_chain(), parse_response()
+
+### REQ-DATA-02: Rate limiting with distributed Redis-based tracking
+- **Unit tests**:
+  - UT-DATA-02.1: Given API rate limit When check_limit() Then return False and prevent API call
+  - UT-DATA-02.2: Given limit reset time passed When check_limit() Then reset counter and allow requests
+  - UT-DATA-02.3: Given concurrent requests When rate_limit() Then prevent race conditions with atomic operations
+- **Edge/negative/property tests**:
+  - ET-DATA-02.1: Given Redis connection failure When check_limit() Then fail-open and allow requests with warning
+  - ET-DATA-02.2: Given clock skew When rate_limit_reset() Then handle gracefully with tolerance
+  - PT-DATA-02.1: Property: rate limit never exceeded, requests distributed evenly over time window
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock Redis with controllable connection failures
+  - Stub time provider for deterministic rate limit testing
+  - Fake concurrent request scenarios
+- **Coverage mapping**:
+  - Lines/branches/functions covered: RateLimiter, check_limit(), reset_limit(), atomic_increment()
+
+### REQ-DATA-03: Health monitoring with automatic source degradation
+- **Unit tests**:
+  - UT-DATA-03.1: Given healthy data source When monitor_health() Then update status and maintain availability
+  - UT-DATA-03.2: Given failing data source When monitor_health() Then mark unhealthy and trigger alerts
+  - UT-DATA-03.3: Given recovered data source When health_check() Then restore to healthy status
+- **Edge/negative/property tests**:
+  - ET-DATA-03.1: Given intermittent failures When calculate_uptime() Then use sliding window average
+  - ET-DATA-03.2: Given false positive health check When validate_health() Then require sustained recovery
+  - PT-DATA-03.1: Property: 0 ≤ uptime_percentage ≤ 100, health status reflects recent performance
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock health check endpoints with controllable responses
+  - Stub metrics collection with deterministic failure patterns
+  - Fake time series data for uptime calculation
+- **Coverage mapping**:
+  - Lines/branches/functions covered: HealthMonitor, check_health(), calculate_uptime(), trigger_alerts()
+
+### Traceability Matrix: REQ-IDs ↔ Tests
+| REQ-ID | Unit Tests | Edge Tests | Property Tests | Integration Tests |
+|--------|------------|------------|----------------|-------------------|
+| REQ-DATA-01 | UT-DATA-01.1-3 | ET-DATA-01.1-2 | PT-DATA-01.1 | IT-DATA-01 |
+| REQ-DATA-02 | UT-DATA-02.1-3 | ET-DATA-02.1-2 | PT-DATA-02.1 | IT-DATA-02 |
+| REQ-DATA-03 | UT-DATA-03.1-3 | ET-DATA-03.1-2 | PT-DATA-03.1 | IT-DATA-03 |
+
+## Implementation Guidance (after specs)
+
+### Algorithms/Flow
+1. **Data Fetching**: validate_symbol() → check_cache() → try_primary_source() → try_fallback() → cache_result() → return_data()
+2. **Rate Limiting**: get_current_usage() → check_against_limit() → allow_or_deny() → increment_counter() → schedule_reset()
+3. **Health Monitoring**: periodic_health_check() → collect_metrics() → calculate_status() → update_availability() → alert_if_needed()
+
+### Pseudocode (reference)
+```python
+async def get_price_data(symbol: str) -> Optional[StockPrice]:
+    # Check cache first
+    cache_key = f"price:{symbol}"
+    cached = await redis.get(cache_key)
+    if cached and not is_stale(cached):
+        return StockPrice.parse_raw(cached)
+
+    # Try primary source (yfinance)
+    if await rate_limiter.check_limit("yfinance", symbol):
+        try:
+            data = await yfinance_client.get_quote(symbol)
+            if data:
+                await cache_result(cache_key, data, ttl=60)
+                return data
+        except Exception as e:
+            logger.warning(f"yfinance failed for {symbol}: {e}")
+
+    # Fallback to Alpha Vantage
+    if await rate_limiter.check_limit("alpha_vantage", symbol):
+        try:
+            data = await alpha_vantage_client.get_quote(symbol)
+            if data:
+                await cache_result(cache_key, data, ttl=300)
+                return data
+        except Exception as e:
+            logger.error(f"Alpha Vantage failed for {symbol}: {e}")
+
+    # Return stale cache or None
+    if cached:
+        logger.info(f"Returning stale data for {symbol}")
+        return StockPrice.parse_raw(cached)
+
+    return None
+```
+
+### Error Handling & Retries
+- **Network timeouts**: 30s timeout with 3 retries, exponential backoff (1s, 2s, 4s)
+- **API rate limits**: Respect limits, queue requests, circuit breaker after sustained failures
+- **Invalid responses**: Skip malformed data, log for debugging, continue with fallback
+- **Cache failures**: Graceful degradation to direct API calls, alert operations team
+
+### Config/flags
+```python
+DATA_SOURCES_CONFIG = {
+    "YFINANCE_TIMEOUT": 30,
+    "ALPHA_VANTAGE_TIMEOUT": 30,
+    "NEWSAPI_TIMEOUT": 15,
+    "MAX_RETRIES": 3,
+    "RETRY_BACKOFF_FACTOR": 2,
+    "HEALTH_CHECK_INTERVAL": 300,  # 5 minutes
+    "RATE_LIMITS": {
+        "yfinance": {"requests": 1000, "window": 3600},
+        "alpha_vantage": {"requests": 500, "window": 3600},
+        "newsapi": {"requests": 1000, "window": 3600}
+    },
+    "CACHE_TTLS": {
+        "price_data": 60,
+        "historical_data": 300,
+        "news_data": 900
+    }
+}
+```
+```
+
+### docs/claude/modules/Claude.Infrastructure.md
+```markdown
+# Claude.Infrastructure
+
+- **Purpose**: Provide robust, scalable infrastructure foundation with Docker orchestration, database management, caching, monitoring, and deployment automation
+- **Scope (in/out)**:
+  - **In**: Docker containerization, PostgreSQL database, Redis caching, Nginx reverse proxy, monitoring/logging, backup systems, CI/CD pipelines
+  - **Out**: Application business logic (handled by other modules), frontend components (handled by UserInterface), external API integrations (handled by DataSources)
+- **Public API (signatures, inputs/outputs, errors)**:
+  - `DockerManager.start_services() → ServiceStatus`
+  - `DatabaseManager.create_connection_pool() → ConnectionPool`
+  - `RedisManager.get_cache_client() → RedisClient`
+  - `MonitoringService.collect_metrics() → MetricsData`
+  - `BackupManager.create_backup() → BackupResult`
+- **Data contracts (schemas, invariants)**:
+  - ServiceStatus: service_name(str), status("running"|"stopped"|"error"), uptime_seconds(int≥0), health_check_url(str|null)
+  - ConnectionPool: max_connections(int>0), active_connections(int≥0), available_connections(int≥0), connection_timeout(int>0)
+  - MetricsData: timestamp(datetime), cpu_usage(0≤float≤100), memory_usage(0≤float≤100), response_time_ms(int≥0)
+  - BackupResult: backup_id(str), timestamp(datetime), size_bytes(int≥0), status("success"|"failed"), location(str)
+- **Dependencies (internal/external)**:
+  - **Internal**: All application modules require infrastructure services
+  - **External**: Docker, PostgreSQL, Redis, Nginx, Prometheus, Grafana, Loki, docker-compose, kubernetes (planned)
+- **State & concurrency model**: Stateful services with persistent storage, connection pooling for concurrency, graceful shutdown procedures, health monitoring
+- **Failure modes & retries**: Service auto-restart on failure, database connection retry with exponential backoff, Redis failover to direct database queries
+- **Performance/SLOs**: <1s service startup, <100ms database queries, 99.9% uptime, <5s backup completion, <10s deployment time
+- **Security/permissions**: Container isolation, environment variable secrets, database encryption at rest, TLS termination, firewall rules
+- **Observability (logs/metrics/traces)**: Structured logging with ELK stack, Prometheus metrics, Grafana dashboards, distributed tracing, alert management
+- **Change risks & migration notes**: Database schema changes require migration scripts; Docker image updates need rolling deployment; Redis cache invalidation on data model changes
+
+## TDD: Requirements → Tests
+
+### REQ-INFRA-01: Docker container orchestration with service dependency management
+- **Unit tests**:
+  - UT-INFRA-01.1: Given docker-compose.yml When start_services() Then start containers in correct dependency order
+  - UT-INFRA-01.2: Given container failure When monitor_health() Then restart failed container and update status
+  - UT-INFRA-01.3: Given graceful shutdown When stop_services() Then stop containers with proper cleanup sequence
+- **Edge/negative/property tests**:
+  - ET-INFRA-01.1: Given insufficient system resources When start_containers() Then handle resource constraints gracefully
+  - ET-INFRA-01.2: Given network partition When container_communication() Then maintain service isolation
+  - PT-INFRA-01.1: Property: container restart preserves data persistence, service startup order maintains dependencies
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock Docker daemon with controllable container states
+  - Stub system resources for resource testing
+  - Fake network conditions for isolation testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: DockerManager, start_services(), health_monitor(), graceful_shutdown()
+
+### REQ-INFRA-02: PostgreSQL database with connection pooling and backup automation
+- **Unit tests**:
+  - UT-INFRA-02.1: Given database configuration When create_connection_pool() Then establish pool with specified parameters
+  - UT-INFRA-02.2: Given connection pool exhaustion When request_connection() Then queue request and handle timeout
+  - UT-INFRA-02.3: Given backup schedule When run_backup() Then create consistent backup and verify integrity
+- **Edge/negative/property tests**:
+  - ET-INFRA-02.1: Given database crash When connection_attempt() Then handle gracefully and attempt reconnection
+  - ET-INFRA-02.2: Given corrupted backup When restore_backup() Then detect corruption and fallback to previous backup
+  - PT-INFRA-02.1: Property: connection pool never exceeds max connections, backup integrity always verifiable
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock PostgreSQL with controllable failure scenarios
+  - Stub file system for backup testing
+  - Fake time provider for backup scheduling
+- **Coverage mapping**:
+  - Lines/branches/functions covered: DatabaseManager, connection_pool(), backup_manager(), integrity_check()
+
+### REQ-INFRA-03: Redis caching with failover and monitoring integration
+- **Unit tests**:
+  - UT-INFRA-03.1: Given Redis configuration When initialize_cache() Then establish connection with proper settings
+  - UT-INFRA-03.2: Given cache miss When get_cached_data() Then fallback to database and cache result
+  - UT-INFRA-03.3: Given Redis failure When cache_operation() Then degrade gracefully to direct database access
+- **Edge/negative/property tests**:
+  - ET-INFRA-03.1: Given Redis memory exhaustion When cache_write() Then handle eviction policies correctly
+  - ET-INFRA-03.2: Given network timeout When Redis_operation() Then timeout gracefully and log error
+  - PT-INFRA-03.1: Property: cache coherence maintained, fallback preserves application functionality
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock Redis with controllable memory and network scenarios
+  - Stub cache operations with deterministic timing
+  - Fake memory pressure for eviction testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: RedisManager, cache_client(), failover_handler(), memory_monitor()
+
+### REQ-INFRA-04: Monitoring and alerting with Prometheus and Grafana integration
+- **Unit tests**:
+  - UT-INFRA-04.1: Given metrics collection When collect_system_metrics() Then gather CPU, memory, and disk usage
+  - UT-INFRA-04.2: Given alert threshold When metric_exceeds_threshold() Then trigger alert and notify operators
+  - UT-INFRA-04.3: Given dashboard configuration When render_dashboard() Then display real-time metrics visualization
+- **Edge/negative/property tests**:
+  - ET-INFRA-04.1: Given metrics collection failure When monitoring_error() Then handle gracefully and alert
+  - ET-INFRA-04.2: Given alert spam When multiple_alerts() Then implement alert deduplication and rate limiting
+  - PT-INFRA-04.1: Property: metrics accuracy within 5% tolerance, alert delivery within 30 seconds
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock Prometheus with controllable metric scenarios
+  - Stub Grafana API for dashboard testing
+  - Fake system metrics for threshold testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: MonitoringService, collect_metrics(), alert_manager(), dashboard_renderer()
+
+### Traceability Matrix: REQ-IDs ↔ Tests
+| REQ-ID | Unit Tests | Edge Tests | Property Tests | Integration Tests |
+|--------|------------|------------|----------------|-------------------|
+| REQ-INFRA-01 | UT-INFRA-01.1-3 | ET-INFRA-01.1-2 | PT-INFRA-01.1 | IT-INFRA-01 |
+| REQ-INFRA-02 | UT-INFRA-02.1-3 | ET-INFRA-02.1-2 | PT-INFRA-02.1 | IT-INFRA-02 |
+| REQ-INFRA-03 | UT-INFRA-03.1-3 | ET-INFRA-03.1-2 | PT-INFRA-03.1 | IT-INFRA-03 |
+| REQ-INFRA-04 | UT-INFRA-04.1-3 | ET-INFRA-04.1-2 | PT-INFRA-04.1 | IT-INFRA-04 |
+
+## Implementation Guidance (after specs)
+
+### Algorithms/Flow
+1. **Service Startup**: validate_config() → initialize_dependencies() → start_core_services() → health_check() → register_monitoring()
+2. **Database Management**: create_pool() → validate_connections() → setup_monitoring() → schedule_backups() → enable_replication()
+3. **Cache Management**: initialize_redis() → setup_failover() → configure_eviction() → monitor_memory() → handle_failures()
+4. **Monitoring Setup**: install_agents() → configure_dashboards() → setup_alerts() → test_notification() → enable_collection()
+
+### Pseudocode (reference)
+```yaml
+# docker-compose.yml infrastructure
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: turtletrading
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+     
+END_PART_AB

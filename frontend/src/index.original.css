@@ -1,0 +1,340 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+/* Root CSS variables for theming */
+:root {
+  /* Light theme colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748b;
+  --color-border: #e2e8f0;
+  --color-border-secondary: #cbd5e1;
+  
+  /* Brand colors */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #dbeafe;
+  
+  /* Market colors */
+  --color-bullish: #22c55e;
+  --color-bearish: #ef4444;
+  --color-neutral: #64748b;
+  
+  /* Status colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #0ea5e9;
+  
+  /* Toast colors */
+  --toast-bg: #ffffff;
+  --toast-color: #0f172a;
+  --toast-border: #e2e8f0;
+  
+  /* Chart colors */
+  --chart-grid: #f1f5f9;
+  --chart-axis: #94a3b8;
+  --chart-tooltip-bg: #1e293b;
+  --chart-tooltip-text: #f8fafc;
+}
+
+/* Dark theme */
+.dark {
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-bg-tertiary: #334155;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
+  --color-border: #334155;
+  --color-border-secondary: #475569;
+  
+  /* Toast colors for dark theme */
+  --toast-bg: #1e293b;
+  --toast-color: #f8fafc;
+  --toast-border: #334155;
+  
+  /* Chart colors for dark theme */
+  --chart-grid: #334155;
+  --chart-axis: #64748b;
+  --chart-tooltip-bg: #f8fafc;
+  --chart-tooltip-text: #1e293b;
+}
+
+/* Base styles */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  
+  code {
+    font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  }
+  
+  /* Custom scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+  
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 3px;
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+  }
+  
+  /* Dark theme scrollbar */
+  .dark *::-webkit-scrollbar-thumb {
+    background-color: #475569;
+  }
+  
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b;
+  }
+  
+  /* Selection colors */
+  ::selection {
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  /* Focus styles */
+  *:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  
+  /* Remove focus for mouse users */
+  .js-focus-visible *:focus:not(.focus-visible) {
+    outline: none;
+  }
+}
+
+/* Component styles */
+@layer components {
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply bg-slate-200 hover:bg-slate-300 text-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 focus:ring-slate-500;
+  }
+  
+  .btn-outline {
+    @apply border border-slate-300 hover:bg-slate-50 text-slate-700 dark:border-slate-600 dark:hover:bg-slate-800 dark:text-slate-300 focus:ring-slate-500;
+  }
+  
+  .btn-ghost {
+    @apply hover:bg-slate-100 text-slate-600 dark:hover:bg-slate-800 dark:text-slate-400 focus:ring-slate-500;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  /* Card styles */
+  .card {
+    @apply bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm;
+  }
+  
+  .card-hover {
+    @apply transition-shadow duration-200 hover:shadow-md;
+  }
+  
+  /* Input styles */
+  .input {
+    @apply w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400;
+  }
+  
+  .input-error {
+    @apply border-red-500 focus:ring-red-500;
+  }
+  
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-bullish {
+    @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
+  }
+  
+  .badge-bearish {
+    @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
+  }
+  
+  .badge-neutral {
+    @apply bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300;
+  }
+  
+  /* Market status indicators */
+  .status-indicator {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+  
+  .status-open {
+    @apply bg-green-500;
+  }
+  
+  .status-closed {
+    @apply bg-red-500;
+  }
+  
+  .status-pre-market {
+    @apply bg-yellow-500;
+  }
+}
+
+/* Utility styles */
+@layer utilities {
+  /* Text gradients */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-blue-600 bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-success {
+    @apply bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-warning {
+    @apply bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent;
+  }
+  
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .animate-bounce-light {
+    animation: bounce 2s infinite;
+  }
+  
+  /* Loading states */
+  .loading-shimmer {
+    @apply animate-pulse bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700;
+    background-size: 200% 100%;
+  }
+  
+  /* Market data styling */
+  .price-positive {
+    @apply text-green-600 dark:text-green-400;
+  }
+  
+  .price-negative {
+    @apply text-red-600 dark:text-red-400;
+  }
+  
+  .price-neutral {
+    @apply text-slate-600 dark:text-slate-400;
+  }
+  
+  /* Chart container */
+  .chart-container {
+    @apply bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700;
+  }
+  
+  /* Data table */
+  .data-table {
+    @apply w-full bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden;
+  }
+  
+  .data-table th {
+    @apply px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50 dark:bg-slate-700 dark:text-slate-400;
+  }
+  
+  .data-table td {
+    @apply px-4 py-3 text-sm text-slate-900 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700;
+  }
+  
+  .data-table tr:hover td {
+    @apply bg-slate-50 dark:bg-slate-700/50;
+  }
+  
+  /* Mobile responsive utilities */
+  .mobile-hidden {
+    @apply hidden sm:block;
+  }
+  
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-before: always;
+  }
+  
+  * {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-border: #000000;
+    --color-text-secondary: #000000;
+  }
+  
+  .dark {
+    --color-border: #ffffff;
+    --color-text-secondary: #ffffff;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

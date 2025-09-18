@@ -1,0 +1,347 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Custom Properties for Design System */
+:root {
+  /* Primary Colors */
+  --color-primary-50: 240 249 255;
+  --color-primary-100: 224 242 254;
+  --color-primary-200: 186 230 253;
+  --color-primary-300: 125 211 252;
+  --color-primary-400: 56 189 248;
+  --color-primary-500: 14 165 233;
+  --color-primary-600: 2 132 199;
+  --color-primary-700: 3 105 161;
+  --color-primary-800: 7 89 133;
+  --color-primary-900: 12 74 110;
+
+  /* Trading Colors */
+  --color-bull: 34 197 94;
+  --color-bear: 239 68 68;
+  --color-warning: 245 158 11;
+
+  /* Neutral Colors */
+  --color-gray-50: 248 250 252;
+  --color-gray-100: 241 245 249;
+  --color-gray-200: 226 232 240;
+  --color-gray-300: 203 213 225;
+  --color-gray-400: 148 163 184;
+  --color-gray-500: 100 116 139;
+  --color-gray-600: 71 85 105;
+  --color-gray-700: 51 65 85;
+  --color-gray-800: 30 41 59;
+  --color-gray-900: 15 23 42;
+
+  /* Spacing Scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Typography */
+  --font-family-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+/* Dark Mode Variables */
+.dark {
+  --color-gray-50: 15 23 42;
+  --color-gray-100: 30 41 59;
+  --color-gray-200: 51 65 85;
+  --color-gray-300: 71 85 105;
+  --color-gray-400: 100 116 139;
+  --color-gray-500: 148 163 184;
+  --color-gray-600: 203 213 225;
+  --color-gray-700: 226 232 240;
+  --color-gray-800: 241 245 249;
+  --color-gray-900: 248 250 252;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-family-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    @apply bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-100;
+    @apply transition-colors duration-200;
+  }
+
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-dark-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-dark-600 rounded-lg;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-dark-500;
+  }
+
+  /* Focus Styles */
+  *:focus {
+    outline: 2px solid rgb(var(--color-primary-500));
+    outline-offset: 2px;
+  }
+
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  *:focus-visible {
+    outline: 2px solid rgb(var(--color-primary-500));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Button Components */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md;
+    @apply transition-all duration-200 ease-in-out;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700;
+    @apply focus:ring-primary-500 dark:bg-primary-600 dark:hover:bg-primary-700;
+    @apply shadow-sm hover:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-100 text-secondary-900 hover:bg-secondary-200;
+    @apply focus:ring-secondary-500 dark:bg-secondary-800 dark:text-secondary-100;
+    @apply dark:hover:bg-secondary-700 border border-secondary-300 dark:border-secondary-600;
+  }
+
+  .btn-bull {
+    @apply bg-bull-600 text-white hover:bg-bull-700 focus:ring-bull-500;
+    @apply shadow-sm hover:shadow-md;
+  }
+
+  .btn-bear {
+    @apply bg-bear-600 text-white hover:bg-bear-700 focus:ring-bear-500;
+    @apply shadow-sm hover:shadow-md;
+  }
+
+  .btn-ghost {
+    @apply text-gray-600 hover:text-gray-900 hover:bg-gray-50;
+    @apply focus:ring-gray-500 dark:text-gray-400 dark:hover:text-gray-100;
+    @apply dark:hover:bg-gray-800;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  /* Card Components */
+  .card {
+    @apply bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-700;
+    @apply transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:shadow-md hover:border-gray-300 dark:hover:border-dark-600;
+    @apply transform hover:-translate-y-1;
+  }
+
+  .card-interactive {
+    @apply cursor-pointer hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600;
+    @apply hover:ring-1 hover:ring-primary-200 dark:hover:ring-primary-800;
+  }
+
+  /* Input Components */
+  .input {
+    @apply block w-full px-3 py-2 border border-gray-300 dark:border-dark-600;
+    @apply rounded-md shadow-sm bg-white dark:bg-dark-800;
+    @apply text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400;
+    @apply focus:ring-primary-500 focus:border-primary-500;
+    @apply transition-colors duration-200;
+  }
+
+  .input-error {
+    @apply border-bear-500 focus:ring-bear-500 focus:border-bear-500;
+  }
+
+  .input-success {
+    @apply border-bull-500 focus:ring-bull-500 focus:border-bull-500;
+  }
+
+  /* Badge Components */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200;
+  }
+
+  .badge-bull {
+    @apply bg-bull-100 text-bull-800 dark:bg-bull-900 dark:text-bull-200;
+  }
+
+  .badge-bear {
+    @apply bg-bear-100 text-bear-800 dark:bg-bear-900 dark:text-bear-200;
+  }
+
+  .badge-warning {
+    @apply bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200;
+  }
+
+  .badge-neutral {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200;
+  }
+
+  /* Chart Container */
+  .chart-container {
+    @apply bg-white dark:bg-dark-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-dark-700;
+  }
+
+  /* Trading Dashboard Layout */
+  .dashboard-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+
+  .dashboard-card {
+    @apply card p-6 space-y-4;
+  }
+
+  /* Market Data Display */
+  .market-price {
+    @apply font-mono text-2xl font-bold;
+  }
+
+  .market-change-positive {
+    @apply text-bull-600 dark:text-bull-400;
+  }
+
+  .market-change-negative {
+    @apply text-bear-600 dark:text-bear-400;
+  }
+
+  .market-change-neutral {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  /* Animation Classes */
+  .animate-pulse-green {
+    animation: pulse-green 2s ease-in-out infinite;
+  }
+
+  .animate-pulse-red {
+    animation: pulse-red 2s ease-in-out infinite;
+  }
+
+  /* Loading States */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+  }
+
+  /* Status Indicators */
+  .status-indicator {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+
+  .status-online {
+    @apply bg-bull-500 shadow-glow-green;
+  }
+
+  .status-offline {
+    @apply bg-bear-500 shadow-glow-red;
+  }
+
+  .status-warning {
+    @apply bg-warning-500;
+  }
+}
+
+@layer utilities {
+  /* Custom Utilities */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent;
+  }
+
+  .border-gradient {
+    border-image: linear-gradient(to right, rgb(var(--color-primary-500)), rgb(var(--color-primary-400))) 1;
+  }
+
+  /* Trading specific utilities */
+  .trend-up {
+    @apply text-bull-600 dark:text-bull-400;
+  }
+
+  .trend-down {
+    @apply text-bear-600 dark:text-bear-400;
+  }
+
+  .trend-neutral {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 dark:border-black/20;
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px rgb(var(--color-primary-500) / 0.3);
+  }
+
+  .glow-bull {
+    box-shadow: 0 0 20px rgb(var(--color-bull) / 0.3);
+  }
+
+  .glow-bear {
+    box-shadow: 0 0 20px rgb(var(--color-bear) / 0.3);
+  }
+}
+
+@keyframes pulse-green {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(34 197 94 / 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgb(34 197 94 / 0);
+  }
+}
+
+@keyframes pulse-red {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(239 68 68 / 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgb(239 68 68 / 0);
+  }
+}

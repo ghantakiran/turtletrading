@@ -1,0 +1,742 @@
+# Claude Implementation Prompt (Part AE)
+
+INSTRUCTIONS
+- Paste this part first if its name is part_aa, then proceed alphabetically.
+- Keep model memory between parts.
+- Do not regenerate content from earlier parts; continue appending outputs.
+
+BEGIN_PART_AE
+
+    flags: e2e
+          fail_ci_if_error: true
+
+  coverage-merge:
+    needs: [backend-coverage, frontend-coverage, e2e-coverage]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all coverage reports
+        uses: actions/download-artifact@v3
+
+      - name: Merge coverage reports
+        run: |
+          ./scripts/merge-coverage.sh
+
+      - name: Enforce combined 100% coverage
+        run: |
+          ./scripts/enforce-coverage-thresholds.sh
+          # Fails CI if any module below 100%
+
+      - name: Generate coverage badge
+        run: |
+          ./scripts/generate-coverage-badge.sh
+```
+
+## Coverage Enforcement Scripts
+```bash
+# scripts/enforce-coverage-thresholds.sh
+#!/bin/bash
+set -e
+
+echo "Enforcing 100% coverage thresholds..."
+
+# Backend coverage check
+cd backend
+coverage report --fail-under=100 || {
+    echo "❌ Backend coverage below 100%"
+    exit 1
+}
+
+# Frontend coverage check
+cd ../frontend
+npm run coverage:check || {
+    echo "❌ Frontend coverage below 100%"
+    exit 1
+}
+
+# E2E coverage check
+cd ../tests
+./check-e2e-coverage.sh || {
+    echo "❌ E2E coverage below 100%"
+    exit 1
+}
+
+echo "✅ All modules meet 100% coverage requirement"
+```
+
+- **Reporting (HTML/LCOV/JUnit)**:
+
+## Coverage Report Formats
+```json
+{
+  "coverage_formats": {
+    "backend": {
+      "html": "backend/htmlcov/index.html",
+      "xml": "backend/coverage.xml",
+      "json": "backend/coverage.json",
+      "terminal": "pytest --cov-report=term-missing"
+    },
+    "frontend": {
+      "html": "frontend/coverage/index.html",
+      "lcov": "frontend/coverage/lcov.info",
+      "json": "frontend/coverage/coverage-final.json",
+      "text": "frontend/coverage/coverage.txt"
+    },
+    "e2e": {
+      "html": "tests/coverage/index.html",
+      "lcov": "tests/coverage/lcov.info",
+      "json": "tests/coverage/coverage.json"
+    },
+    "combined": {
+      "html": "coverage/combined/index.html",
+      "json": "coverage/combined/coverage.json",
+      "badge": "coverage/badge.svg"
+    }
+  }
+}
+```
+
+## Package.json Scripts (Frontend)
+```json
+{
+  "scripts": {
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest watch",
+    "coverage:check": "vitest run --coverage --reporter=json && node scripts/check-coverage.js",
+    "coverage:html": "vitest run --coverage --reporter=html",
+    "coverage:lcov": "vitest run --coverage --reporter=lcov"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vitest/ui": "^1.0.0"
+  }
+}
+```
+
+## Pytest Configuration (Backend)
+```ini
+# pytest.ini
+[tool:pytest]
+testpaths = tests
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+addopts =
+    --cov=app
+    --cov-report=html
+    --cov-report=term-missing
+    --cov-report=xml
+    --cov-fail-under=100
+    --strict-markers
+    --disable-warnings
+asyncio_mode = auto
+
+[coverage:run]
+source = app
+omit =
+    app/main.py
+    */tests/*
+    */venv/*
+    */__pycache__/*
+
+[coverage:report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+```
+
+- **How to debug missed lines/branches**:
+
+## Coverage Debugging Guide
+```bash
+# 1. Generate detailed HTML report
+cd backend
+pytest --cov=app --cov-report=html
+open htmlcov/index.html
+
+# 2. Identify missed lines
+coverage report --show-missing
+
+# 3. Debug specific module
+pytest tests/test_stock_service.py --cov=app.services.stock_service --cov-report=term-missing -v
+
+# 4. Branch coverage analysis
+coverage report --show-missing --skip-covered
+
+# 5. Interactive coverage debugging
+coverage debug sys  # Show coverage configuration
+coverage debug data  # Show coverage data file location
+
+# 6. Find untested code paths
+coverage html --show-contexts
+# Open htmlcov/index.html and look for red (uncovered) lines
+
+# 7. Test specific scenarios for missed branches
+pytest tests/ -k "test_error_handling" --cov-branch --cov-report=term-missing
+```
+
+## Frontend Coverage Debugging
+```bash
+# 1. Detailed component coverage
+cd frontend
+npx vitest run --coverage --reporter=verbose src/components/
+
+# 2. Interactive coverage UI
+npx vitest --ui --coverage
+
+# 3. Coverage for specific files
+npx vitest run --coverage src/services/stockService.ts
+
+# 4. Debug uncovered branches
+npm run test:coverage -- --reporter=html
+open coverage/index.html
+# Look for yellow (partial) and red (uncovered) lines
+
+# 5. Component interaction testing
+npx vitest run --coverage src/components/ src/hooks/
+```
+
+## Common Coverage Issues and Solutions
+```bash
+# Issue: Async code not covered
+# Solution: Use proper async test patterns
+async def test_async_function():
+    result = await async_function()
+    assert result is not None
+
+# Issue: Exception handling not covered
+# Solution: Test both success and failure paths
+def test_error_handling():
+    with pytest.raises(CustomException):
+        function_that_raises()
+
+# Issue: Complex conditional logic not covered
+# Solution: Test all branch combinations
+@pytest.mark.parametrize("condition,expected", [
+    (True, "success"),
+    (False, "failure")
+])
+def test_conditional_logic(condition, expected):
+    result = complex_function(condition)
+    assert result == expected
+
+# Issue: React component props not covered
+# Solution: Test all prop variations
+test('Component with different props', () => {
+    render(<Component variant="primary" />)
+    render(<Component variant="secondary" />)
+    render(<Component disabled={true} />)
+})
+```
+```
+
+### docs/claude/tests/integration/real_time_data_flow.md
+```markdown
+# Integration: Real-time Market Data Flow
+
+- **Modules involved**: MarketData, DataSources, UserInterface, Infrastructure, Authentication
+- **Contracts validated**:
+  - MarketData ↔ DataSources: Live price feed integration and failover
+  - MarketData ↔ UserInterface: WebSocket real-time updates to frontend
+  - MarketData ↔ Infrastructure: Redis caching and WebSocket connection management
+  - Authentication ↔ MarketData: User subscription-based data access control
+
+- **Scenarios (happy, failure, timeout, retry, idempotent)**:
+
+## Happy Path: Real-time Price Streaming
+**Given**: Authenticated user subscribes to real-time price updates
+**When**: Market data flows through WebSocket connection
+**Then**: Frontend receives price updates within 100ms of market changes
+
+```python
+async def test_real_time_price_streaming_happy_path():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'pro')
+    websocket_client = await connect_websocket(auth_token)
+
+    # Subscribe to real-time updates
+    await websocket_client.send_json({
+        'action': 'subscribe',
+        'symbols': ['AAPL', 'TSLA', 'NVDA'],
+        'data_types': ['price', 'volume']
+    })
+
+    # Act - Simulate market data update
+    market_update = {
+        'symbol': 'AAPL',
+        'price': 150.25,
+        'volume': 1000000,
+        'timestamp': datetime.utcnow().isoformat()
+    }
+    await market_data_service.broadcast_update(market_update)
+
+    # Assert
+    start_time = time.time()
+    received_update = await websocket_client.receive_json()
+    latency_ms = (time.time() - start_time) * 1000
+
+    assert latency_ms < 100  # Sub-100ms latency requirement
+    assert received_update['symbol'] == 'AAPL'
+    assert received_update['price'] == 150.25
+    assert received_update['type'] == 'price_update'
+
+    # Cleanup
+    await websocket_client.close()
+```
+
+## Failure Path: WebSocket Connection Drop
+**Given**: Active WebSocket connection with subscriptions
+**When**: Network interruption causes connection drop
+**Then**: Automatic reconnection with subscription restoration
+
+```python
+async def test_websocket_reconnection_flow():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'basic')
+    websocket_client = await connect_websocket(auth_token)
+
+    # Establish subscriptions
+    await websocket_client.send_json({
+        'action': 'subscribe',
+        'symbols': ['SPY', 'QQQ']
+    })
+
+    # Confirm subscription
+    subscription_ack = await websocket_client.receive_json()
+    assert subscription_ack['status'] == 'subscribed'
+
+    # Act - Simulate connection drop
+    await websocket_client.force_disconnect()
+
+    # Automatic reconnection should occur
+    await asyncio.sleep(2)  # Allow time for reconnection
+
+    # Assert - Reconnection and subscription restoration
+    reconnected_client = await get_reconnected_websocket(auth_token)
+
+    # Send test update to verify subscriptions restored
+    test_update = {'symbol': 'SPY', 'price': 450.00}
+    await market_data_service.broadcast_update(test_update)
+
+    received_update = await reconnected_client.receive_json()
+    assert received_update['symbol'] == 'SPY'
+    assert received_update['price'] == 450.00
+
+    # Verify subscription persistence
+    connection_state = await market_data_service.get_connection_state(auth_token)
+    assert 'SPY' in connection_state['subscriptions']
+    assert 'QQQ' in connection_state['subscriptions']
+```
+
+## Timeout Scenario: Data Source Response Timeout
+**Given**: External market data API experiences high latency
+**When**: Real-time data request times out (>5 seconds)
+**Then**: Fallback to cached data and log timeout event
+
+```python
+async def test_data_source_timeout_handling():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'pro')
+    websocket_client = await connect_websocket(auth_token)
+
+    # Simulate slow external API
+    mock_external_apis.set_response_delay('alpha_vantage', 7)  # 7 second delay
+
+    # Act - Request real-time data that will timeout
+    await websocket_client.send_json({
+        'action': 'get_quote',
+        'symbol': 'MSFT'
+    })
+
+    # Assert
+    start_time = time.time()
+    response = await websocket_client.receive_json()
+    duration = time.time() - start_time
+
+    assert duration < 6  # Should timeout before 6 seconds
+    assert response['status'] == 'partial_data'
+    assert response['data_source'] == 'cache'
+    assert response['warning'] == 'external_api_timeout'
+    assert 'last_updated' in response
+
+    # Verify fallback data is still useful
+    assert response['symbol'] == 'MSFT'
+    assert 'price' in response
+    assert response['age_seconds'] < 300  # Cache data less than 5 minutes old
+```
+
+## Retry Scenario: Intermittent API Failures
+**Given**: External data source has intermittent failures (50% success rate)
+**When**: Real-time data service attempts multiple API calls
+**Then**: Retry with exponential backoff, succeed within 3 attempts
+
+```python
+async def test_api_retry_logic():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'basic')
+
+    # Simulate intermittent failures (fail, fail, succeed pattern)
+    mock_external_apis.set_failure_rate('yfinance', 0.67)  # 67% failure rate
+    mock_external_apis.set_retry_pattern([False, False, True])  # Succeed on 3rd try
+
+    # Act
+    start_time = time.time()
+    quote_result = await market_data_service.get_real_time_quote('AMZN')
+    duration = time.time() - start_time
+
+    # Assert
+    assert quote_result['success'] == True
+    assert quote_result['symbol'] == 'AMZN'
+    assert quote_result['retry_attempts'] == 3
+
+    # Verify exponential backoff timing (1s + 2s + success = ~3+ seconds)
+    assert duration >= 3.0
+    assert duration < 8.0  # But not excessive
+
+    # Verify data quality despite retries
+    assert quote_result['price'] > 0
+    assert quote_result['timestamp'] is not None
+    assert quote_result['data_source'] in ['yfinance', 'alpha_vantage']
+```
+
+## Idempotency: Duplicate Subscription Requests
+**Given**: User sends multiple identical subscription requests
+**When**: WebSocket handler processes duplicate subscriptions
+**Then**: Maintain single subscription per symbol, no duplicate updates
+
+```python
+async def test_subscription_idempotency():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'pro')
+    websocket_client = await connect_websocket(auth_token)
+
+    # Act - Send multiple identical subscription requests
+    for i in range(5):
+        await websocket_client.send_json({
+            'action': 'subscribe',
+            'symbols': ['GOOGL'],
+            'request_id': f'req_{i}'
+        })
+
+    # Receive acknowledgments
+    ack_responses = []
+    for i in range(5):
+        ack = await websocket_client.receive_json()
+        ack_responses.append(ack)
+
+    # Assert - All requests acknowledged but single subscription maintained
+    for ack in ack_responses:
+        assert ack['status'] == 'subscribed'
+        assert ack['symbol'] == 'GOOGL'
+
+    # Verify only one subscription exists
+    connection_state = await market_data_service.get_connection_state(auth_token)
+    googl_subscriptions = [sub for sub in connection_state['subscriptions'] if sub['symbol'] == 'GOOGL']
+    assert len(googl_subscriptions) == 1
+
+    # Test that only one update is sent per market change
+    await market_data_service.broadcast_update({'symbol': 'GOOGL', 'price': 2750.00})
+
+    # Should receive exactly one update, not five
+    update_count = 0
+    try:
+        while True:
+            await asyncio.wait_for(websocket_client.receive_json(), timeout=1.0)
+            update_count += 1
+    except asyncio.TimeoutError:
+        pass  # Expected after receiving all updates
+
+    assert update_count == 1  # Exactly one update received
+```
+
+## Performance: High-Frequency Update Handling
+**Given**: High-frequency market data (100 updates/second)
+**When**: WebSocket service processes rapid price changes
+**Then**: Maintain sub-50ms processing time per update
+
+```python
+async def test_high_frequency_update_performance():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'pro')
+    websocket_client = await connect_websocket(auth_token)
+
+    await websocket_client.send_json({
+        'action': 'subscribe',
+        'symbols': ['SPY'],
+        'high_frequency': True
+    })
+
+    # Act - Generate 100 rapid updates
+    update_times = []
+    for i in range(100):
+        start_time = time.time()
+
+        market_update = {
+            'symbol': 'SPY',
+            'price': 450.00 + (i * 0.01),  # Incrementing price
+            'timestamp': datetime.utcnow().isoformat()
+        }
+
+        await market_data_service.broadcast_update(market_update)
+        received_update = await websocket_client.receive_json()
+
+        processing_time = (time.time() - start_time) * 1000  # Convert to ms
+        update_times.append(processing_time)
+
+    # Assert performance requirements
+    avg_processing_time = sum(update_times) / len(update_times)
+    max_processing_time = max(update_times)
+    p95_processing_time = sorted(update_times)[94]  # 95th percentile
+
+    assert avg_processing_time < 25  # Average under 25ms
+    assert p95_processing_time < 50  # 95th percentile under 50ms
+    assert max_processing_time < 100  # No update over 100ms
+
+    # Verify data integrity under high frequency
+    final_update = received_update
+    assert final_update['symbol'] == 'SPY'
+    assert final_update['price'] == 450.99  # Last price in sequence
+```
+
+- **Data fixtures & golden files**:
+  - `fixtures/market_hours_schedule.json`: Trading hours and market status
+  - `fixtures/high_frequency_price_data.json`: Sample rapid price movements
+  - `golden/websocket_message_format.json`: Standard WebSocket message structure
+  - `fixtures/connection_failure_scenarios.json`: Network failure simulation data
+
+- **Observability assertions**:
+  - WebSocket connection metrics (active connections, messages/second)
+  - Data source health checks and failover events
+  - Redis cache hit/miss ratios for real-time data
+  - Alert triggers for connection drops or high latency
+
+```python
+def assert_real_time_observability(websocket_session):
+    # Connection metrics
+    assert_metric_recorded("websocket_active_connections", min_value=1)
+    assert_metric_recorded("messages_per_second", min_value=0)
+
+    # Performance metrics
+    assert_metric_recorded("websocket_message_latency_ms", max_value=100)
+    assert_metric_recorded("data_source_response_time_ms", max_value=5000)
+
+    # Health check assertions
+    assert_log_entry_exists("websocket_connection_established")
+    assert_log_entry_exists("subscription_processed", {"symbols_count": ">0"})
+
+    # Cache performance
+    assert_metric_recorded("redis_cache_hit_ratio", min_value=0.8)
+```
+```
+
+### docs/claude/tests/integration/stock_analysis_flow.md
+```markdown
+# Integration: Stock Analysis End-to-End Flow
+
+- **Modules involved**: StockAnalysis, DataSources, Authentication, MarketData, UserInterface
+- **Contracts validated**:
+  - StockAnalysis ↔ DataSources: Stock price data retrieval and caching
+  - Authentication ↔ StockAnalysis: User permissions for advanced features
+  - MarketData ↔ StockAnalysis: Real-time price updates integration
+  - UserInterface ↔ StockAnalysis: Frontend display of analysis results
+
+- **Scenarios (happy, failure, timeout, retry, idempotent)**:
+
+## Happy Path: Complete Stock Analysis Flow
+**Given**: Authenticated user requests analysis for AAPL
+**When**: Full analysis pipeline executes (data fetch → technical analysis → LSTM prediction → sentiment analysis)
+**Then**: Return comprehensive analysis with 95% confidence scores
+
+```python
+async def test_complete_stock_analysis_happy_path():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'pro')
+    symbol = 'AAPL'
+
+    # Act - Execute full analysis pipeline
+    response = await client.get(
+        f"/api/v1/stocks/{symbol}/analysis",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+
+    # Assert
+    assert response.status_code == 200
+    analysis = response.json()
+
+    # Validate contract compliance
+    assert analysis['symbol'] == symbol
+    assert 'technical_score' in analysis
+    assert 'lstm_prediction' in analysis
+    assert 'sentiment_score' in analysis
+    assert analysis['confidence'] >= 0.95
+
+    # Validate cross-module integration
+    assert analysis['technical_score']['rsi'] is not None  # StockAnalysis module
+    assert analysis['data_sources']['primary'] == 'yfinance'  # DataSources module
+    assert analysis['user_tier'] == 'pro'  # Authentication module
+    assert analysis['real_time_price'] is not None  # MarketData module
+```
+
+## Failure Path: External API Unavailable
+**Given**: Primary data source (yfinance) is unavailable
+**When**: Stock analysis request attempts data retrieval
+**Then**: Automatically fallback to Alpha Vantage and complete analysis
+
+```python
+async def test_data_source_failover():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'basic')
+    symbol = 'TSLA'
+
+    # Simulate yfinance failure
+    mock_external_apis.yfinance.set_unavailable()
+
+    # Act
+    response = await client.get(
+        f"/api/v1/stocks/{symbol}/analysis",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+
+    # Assert
+    assert response.status_code == 200
+    analysis = response.json()
+
+    # Validate fallback behavior
+    assert analysis['data_sources']['primary'] == 'alpha_vantage'
+    assert analysis['data_sources']['fallback_used'] == True
+    assert analysis['symbol'] == symbol
+    assert 'technical_score' in analysis  # Analysis still completes
+```
+
+## Timeout Scenario: LSTM Model Prediction Timeout
+**Given**: LSTM model prediction takes longer than 30 seconds
+**When**: Analysis request waits for prediction
+**Then**: Return partial analysis without LSTM prediction, log timeout
+
+```python
+async def test_lstm_prediction_timeout():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'pro')
+    symbol = 'NVDA'
+
+    # Simulate slow LSTM prediction
+    mock_lstm_service.set_prediction_delay(35)  # 35 second delay
+
+    # Act
+    start_time = time.time()
+    response = await client.get(
+        f"/api/v1/stocks/{symbol}/analysis",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        timeout=32  # 32 second timeout
+    )
+    duration = time.time() - start_time
+
+    # Assert
+    assert response.status_code == 200
+    assert duration < 32  # Request completed within timeout
+
+    analysis = response.json()
+    assert analysis['lstm_prediction']['status'] == 'timeout'
+    assert analysis['lstm_prediction']['error'] == 'prediction_timeout_30s'
+    assert 'technical_score' in analysis  # Other analysis components completed
+    assert 'sentiment_score' in analysis
+```
+
+## Retry Scenario: Temporary Network Failure
+**Given**: Intermittent network failures during data retrieval
+**When**: Stock analysis attempts external API calls
+**Then**: Retry 3 times with exponential backoff, succeed on 3rd attempt
+
+```python
+async def test_network_retry_logic():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'basic')
+    symbol = 'META'
+
+    # Simulate network failures (fail first 2 attempts, succeed on 3rd)
+    mock_external_apis.set_failure_pattern([True, True, False])
+
+    # Act
+    start_time = time.time()
+    response = await client.get(
+        f"/api/v1/stocks/{symbol}/analysis",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    duration = time.time() - start_time
+
+    # Assert
+    assert response.status_code == 200
+    analysis = response.json()
+
+    # Validate retry behavior
+    assert analysis['data_sources']['retry_attempts'] == 3
+    assert analysis['data_sources']['final_attempt_success'] == True
+    assert duration > 3  # Should take time due to retries (1s + 2s + success)
+    assert duration < 10  # But not excessive
+```
+
+## Idempotency: Repeated Analysis Requests
+**Given**: Multiple identical analysis requests within cache TTL
+**When**: Same user requests same symbol analysis repeatedly
+**Then**: Return cached results with consistent data
+
+```python
+async def test_analysis_idempotency():
+    # Arrange
+    auth_token = await create_test_user_token('test@example.com', 'pro')
+    symbol = 'GOOGL'
+
+    # Act - Make multiple identical requests
+    responses = []
+    for i in range(5):
+        response = await client.get(
+            f"/api/v1/stocks/{symbol}/analysis",
+            headers={"Authorization": f"Bearer {auth_token}"}
+        )
+        responses.append(response.json())
+
+    # Assert
+    # All responses should be identical (cached)
+    first_response = responses[0]
+    for response in responses[1:]:
+        assert response['symbol'] == first_response['symbol']
+        assert response['technical_score'] == first_response['technical_score']
+        assert response['lstm_prediction'] == first_response['lstm_prediction']
+        assert response['cache_hit'] == True  # Except first request
+
+    # Validate cache metadata
+    assert first_response['cache_hit'] == False  # First request was cache miss
+    assert all(resp['cache_hit'] == True for resp in responses[1:])
+```
+
+- **Data fixtures & golden files**:
+  - `fixtures/aapl_historical_data.json`: 1 year of AAPL OHLCV data
+  - `fixtures/market_crash_scenario.json`: 2008-style market crash data
+  - `golden/aapl_technical_analysis.json`: Expected technical indicator values
+  - `golden/lstm_prediction_output.json`: Reference LSTM prediction format
+
+- **Observability assertions**:
+  - Log entries for each module interaction
+  - Metrics collection for response times and error rates
+  - Tracing headers propagated through all service calls
+  - Alert triggers for analysis failures or timeout scenarios
+
+```python
+def assert_observability_compliance(analysis_response):
+    # Log assertions
+    assert_log_entry_exists("stock_analysis_started", {"symbol": "AAPL"})
+    assert_log_entry_exists("data_source_selected", {"source": "yfinance"})
+    assert_log_entry_exists("technical_analysis_completed", {"indicators_count": 15})
+
+    # Metrics assertions
+    assert_metric_recorded("stock_analysis_duration_ms", min_value=0, max_value=30000)
+    assert_metric_recorded("data_source_s
+END_PART_AE

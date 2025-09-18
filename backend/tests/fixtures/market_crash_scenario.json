@@ -1,0 +1,380 @@
+{
+  "scenario_name": "2008_style_market_crash",
+  "description": "Simulated market crash scenario based on 2008 financial crisis patterns",
+  "symbol": "SPY",
+  "total_trading_days": 45,
+  "crash_characteristics": {
+    "pre_crash_days": 10,
+    "crash_day_drop": -0.20,
+    "recovery_period_days": 30,
+    "increased_volatility_factor": 3.5,
+    "volume_spike_factor": 4.0
+  },
+  "historical_data": [
+    {
+      "date": "2023-09-01",
+      "phase": "pre_crash",
+      "open": 450.00,
+      "high": 452.50,
+      "low": 448.75,
+      "close": 451.20,
+      "volume": 75000000,
+      "notes": "Normal trading day"
+    },
+    {
+      "date": "2023-09-02",
+      "phase": "pre_crash",
+      "open": 451.20,
+      "high": 453.80,
+      "low": 450.10,
+      "close": 452.90,
+      "volume": 68000000,
+      "notes": "Slight upward momentum"
+    },
+    {
+      "date": "2023-09-03",
+      "phase": "pre_crash",
+      "open": 452.90,
+      "high": 454.60,
+      "low": 451.30,
+      "close": 453.75,
+      "volume": 72000000,
+      "notes": "Continued gains, no warning signs"
+    },
+    {
+      "date": "2023-09-04",
+      "phase": "pre_crash",
+      "open": 453.75,
+      "high": 455.20,
+      "low": 452.85,
+      "close": 454.30,
+      "volume": 70000000,
+      "notes": "Market at recent highs"
+    },
+    {
+      "date": "2023-09-05",
+      "phase": "pre_crash_warning",
+      "open": 454.30,
+      "high": 455.75,
+      "low": 451.90,
+      "close": 452.15,
+      "volume": 85000000,
+      "notes": "First signs of uncertainty, increased volume"
+    },
+    {
+      "date": "2023-09-06",
+      "phase": "pre_crash_warning",
+      "open": 452.15,
+      "high": 453.40,
+      "low": 449.80,
+      "close": 450.25,
+      "volume": 95000000,
+      "notes": "Volatility increasing, volume spike"
+    },
+    {
+      "date": "2023-09-07",
+      "phase": "pre_crash_warning",
+      "open": 450.25,
+      "high": 451.85,
+      "low": 447.60,
+      "close": 448.90,
+      "volume": 105000000,
+      "notes": "Clear downward pressure, high volume"
+    },
+    {
+      "date": "2023-09-08",
+      "phase": "pre_crash_panic",
+      "open": 448.90,
+      "high": 449.75,
+      "low": 444.20,
+      "close": 445.80,
+      "volume": 125000000,
+      "notes": "Panic selling begins"
+    },
+    {
+      "date": "2023-09-09",
+      "phase": "pre_crash_panic",
+      "open": 445.80,
+      "high": 447.30,
+      "low": 441.50,
+      "close": 443.60,
+      "volume": 140000000,
+      "notes": "Accelerating decline"
+    },
+    {
+      "date": "2023-09-10",
+      "phase": "pre_crash_panic",
+      "open": 443.60,
+      "high": 444.85,
+      "low": 439.20,
+      "close": 440.90,
+      "volume": 160000000,
+      "notes": "Final day before major crash"
+    },
+    {
+      "date": "2023-09-11",
+      "phase": "crash_day",
+      "open": 440.90,
+      "high": 442.10,
+      "low": 352.70,
+      "close": 352.72,
+      "volume": 300000000,
+      "notes": "CRASH DAY: -20% drop, extreme volume"
+    },
+    {
+      "date": "2023-09-12",
+      "phase": "post_crash_bounce",
+      "open": 352.72,
+      "high": 378.50,
+      "low": 348.90,
+      "close": 375.20,
+      "volume": 280000000,
+      "notes": "Dead cat bounce, +6.4%"
+    },
+    {
+      "date": "2023-09-13",
+      "phase": "post_crash_volatility",
+      "open": 375.20,
+      "high": 385.40,
+      "low": 365.80,
+      "close": 368.45,
+      "volume": 220000000,
+      "notes": "High volatility continues"
+    },
+    {
+      "date": "2023-09-14",
+      "phase": "post_crash_volatility",
+      "open": 368.45,
+      "high": 372.90,
+      "low": 358.20,
+      "close": 361.75,
+      "volume": 195000000,
+      "notes": "Continued selling pressure"
+    },
+    {
+      "date": "2023-09-15",
+      "phase": "post_crash_volatility",
+      "open": 361.75,
+      "high": 370.85,
+      "low": 354.60,
+      "close": 369.30,
+      "volume": 175000000,
+      "notes": "Attempting to find support"
+    },
+    {
+      "date": "2023-09-16",
+      "phase": "stabilization_attempt",
+      "open": 369.30,
+      "high": 376.80,
+      "low": 366.90,
+      "close": 374.55,
+      "volume": 155000000,
+      "notes": "Small recovery attempt"
+    },
+    {
+      "date": "2023-09-17",
+      "phase": "stabilization_attempt",
+      "open": 374.55,
+      "high": 379.20,
+      "low": 371.40,
+      "close": 377.90,
+      "volume": 145000000,
+      "notes": "Modest gains, volume declining"
+    },
+    {
+      "date": "2023-09-18",
+      "phase": "secondary_decline",
+      "open": 377.90,
+      "high": 380.15,
+      "low": 370.25,
+      "close": 372.80,
+      "volume": 135000000,
+      "notes": "Failed rally, renewed selling"
+    },
+    {
+      "date": "2023-09-19",
+      "phase": "secondary_decline",
+      "open": 372.80,
+      "high": 375.60,
+      "low": 365.45,
+      "close": 367.20,
+      "volume": 125000000,
+      "notes": "Making lower lows"
+    },
+    {
+      "date": "2023-09-20",
+      "phase": "capitulation",
+      "open": 367.20,
+      "high": 369.80,
+      "low": 355.90,
+      "close": 358.40,
+      "volume": 180000000,
+      "notes": "Capitulation selling, volume spike"
+    },
+    {
+      "date": "2023-09-21",
+      "phase": "bottom_formation",
+      "open": 358.40,
+      "high": 365.75,
+      "low": 356.20,
+      "close": 363.85,
+      "volume": 165000000,
+      "notes": "Potential bottom formation"
+    },
+    {
+      "date": "2023-09-22",
+      "phase": "bottom_formation",
+      "open": 363.85,
+      "high": 368.90,
+      "low": 360.50,
+      "close": 366.70,
+      "volume": 140000000,
+      "notes": "Holding above recent lows"
+    },
+    {
+      "date": "2023-09-23",
+      "phase": "early_recovery",
+      "open": 366.70,
+      "high": 374.20,
+      "low": 364.80,
+      "close": 372.15,
+      "volume": 120000000,
+      "notes": "First meaningful recovery day"
+    },
+    {
+      "date": "2023-09-24",
+      "phase": "early_recovery",
+      "open": 372.15,
+      "high": 378.45,
+      "low": 370.90,
+      "close": 376.80,
+      "volume": 115000000,
+      "notes": "Recovery gaining momentum"
+    },
+    {
+      "date": "2023-09-25",
+      "phase": "recovery_continuation",
+      "open": 376.80,
+      "high": 382.60,
+      "low": 375.30,
+      "close": 380.95,
+      "volume": 110000000,
+      "notes": "Consistent recovery trend"
+    },
+    {
+      "date": "2023-09-26",
+      "phase": "recovery_continuation",
+      "open": 380.95,
+      "high": 385.70,
+      "low": 379.20,
+      "close": 384.25,
+      "volume": 105000000,
+      "notes": "Breaking resistance levels"
+    },
+    {
+      "date": "2023-09-27",
+      "phase": "recovery_continuation",
+      "open": 384.25,
+      "high": 388.40,
+      "low": 382.85,
+      "close": 387.60,
+      "volume": 100000000,
+      "notes": "Strong recovery, normal volume"
+    },
+    {
+      "date": "2023-09-28",
+      "phase": "recovery_pause",
+      "open": 387.60,
+      "high": 390.25,
+      "low": 385.90,
+      "close": 388.75,
+      "volume": 95000000,
+      "notes": "Recovery slowing, consolidation"
+    },
+    {
+      "date": "2023-09-29",
+      "phase": "recovery_pause",
+      "open": 388.75,
+      "high": 391.80,
+      "low": 387.30,
+      "close": 390.50,
+      "volume": 90000000,
+      "notes": "Sideways movement"
+    },
+    {
+      "date": "2023-09-30",
+      "phase": "new_uptrend",
+      "open": 390.50,
+      "high": 394.85,
+      "low": 389.70,
+      "close": 393.90,
+      "volume": 85000000,
+      "notes": "Breaking out to new highs since crash"
+    }
+  ],
+  "technical_indicator_expectations": {
+    "rsi": {
+      "pre_crash": "60-70 range",
+      "crash_day": "Below 30 (oversold)",
+      "recovery": "30-50 range gradually improving"
+    },
+    "macd": {
+      "pre_crash": "Bearish divergence warning",
+      "crash_day": "Sharp negative histogram",
+      "recovery": "Bullish crossover signals"
+    },
+    "bollinger_bands": {
+      "pre_crash": "Price at upper band",
+      "crash_day": "Price far below lower band",
+      "recovery": "Price between middle and upper band"
+    },
+    "volume": {
+      "pre_crash": "Increasing on down days",
+      "crash_day": "Extremely high volume",
+      "recovery": "Decreasing to normal levels"
+    },
+    "atr": {
+      "pre_crash": "Rising volatility",
+      "crash_day": "Extreme volatility spike",
+      "recovery": "Gradually declining volatility"
+    }
+  },
+  "risk_management_scenarios": {
+    "stop_loss_testing": {
+      "5_percent_stop": "Triggered on Sept 5th",
+      "10_percent_stop": "Triggered on Sept 8th",
+      "15_percent_stop": "Triggered on Sept 10th",
+      "20_percent_stop": "Triggered on crash day"
+    },
+    "position_sizing": {
+      "normal_position": "100% of intended size",
+      "high_volatility": "50% of intended size",
+      "crash_conditions": "25% of intended size or cash"
+    }
+  },
+  "test_validation_points": {
+    "data_integrity": {
+      "no_price_gaps": "All OHLC relationships valid",
+      "volume_consistency": "Volume increases with volatility",
+      "date_continuity": "No missing trading days"
+    },
+    "calculation_accuracy": {
+      "percentage_changes": "Verified against close prices",
+      "volatility_calculations": "ATR and standard deviation consistent",
+      "volume_analysis": "Relative volume calculations accurate"
+    },
+    "edge_case_handling": {
+      "extreme_moves": "20% single-day drop handled gracefully",
+      "high_volume": "4x normal volume processed correctly",
+      "recovery_patterns": "Post-crash analysis remains stable"
+    }
+  },
+  "metadata": {
+    "created_by": "test_data_generator",
+    "creation_date": "2024-01-15T10:00:00Z",
+    "based_on": "2008 financial crisis patterns",
+    "total_market_drop": "20.6%",
+    "recovery_to_baseline": "30 trading days",
+    "max_daily_volatility": "8.5%"
+  }
+}

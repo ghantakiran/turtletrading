@@ -1,0 +1,542 @@
+# Claude Implementation Prompt (Part AD)
+
+INSTRUCTIONS
+- Paste this part first if its name is part_aa, then proceed alphabetically.
+- Keep model memory between parts.
+- Do not regenerate content from earlier parts; continue appending outputs.
+
+BEGIN_PART_AD
+
+  final_score = (
+        0.5 * lstm_score.confidence * lstm_score.direction +
+        0.3 * technical_score +
+        0.1 * sentiment_score +
+        0.1 * seasonality_boost
+    )
+
+    # Generate recommendation
+    recommendation = get_recommendation(final_score, confidence=min(lstm_score.confidence, 0.8))
+
+    result = AnalysisResult(
+        symbol=symbol,
+        technical_score=technical_score,
+        lstm_score=lstm_score.confidence,
+        sentiment_score=sentiment_score,
+        final_score=final_score,
+        recommendation=recommendation,
+        timestamp=datetime.utcnow()
+    )
+
+    # Cache result
+    await redis.setex(cache_key, 300, result.json())  # 5-minute cache
+
+    return result
+```
+
+### Error Handling & Retries
+- **Data fetch failures**: Automatic fallback through DataSources module, degrade gracefully with partial analysis
+- **Model inference errors**: Return confidence=0, fallback to pure technical analysis, log for model retraining
+- **Calculation errors**: Skip problematic indicators, adjust weights, continue with available data
+- **Cache failures**: Continue with direct computation, log cache issues for infrastructure team
+
+### Config/flags
+```python
+STOCK_ANALYSIS_CONFIG = {
+    "TECHNICAL_WEIGHTS": {
+        "RSI": 0.12, "MACD": 0.16, "EMA20": 0.12, "SMA50": 0.10, "SMA200": 0.10,
+        "Stochastic": 0.10, "Bollinger": 0.10, "ADX": 0.12, "OBV": 0.08
+    },
+    "LSTM_CONFIG": {
+        "LOOKBACK_WINDOW": 90,
+        "PREDICTION_HORIZON": [1, 5, 10, 30],
+        "MODEL_PATH": "/models/lstm_v2.h5",
+        "FEATURE_COUNT": 20,  # Price + volume + 18 technical indicators
+        "CONFIDENCE_THRESHOLD": 0.6
+    },
+    "SCORING_WEIGHTS": {
+        "LSTM_WEIGHT": 0.5,
+        "TECHNICAL_WEIGHT": 0.3,
+        "SENTIMENT_WEIGHT": 0.1,
+        "SEASONALITY_WEIGHT": 0.1
+    },
+    "CACHE_TTL": {
+        "TECHNICAL_ANALYSIS": 300,  # 5 minutes
+        "LSTM_PREDICTION": 1800,    # 30 minutes
+        "COMPREHENSIVE_ANALYSIS": 300  # 5 minutes
+    },
+    "PERFORMANCE_TARGETS": {
+        "TECHNICAL_ANALYSIS_MS": 500,
+        "LSTM_PREDICTION_MS": 2000,
+        "CACHE_HIT_RATIO": 0.8,
+        "SUCCESS_RATE": 0.95
+    }
+}
+```
+```
+
+### docs/claude/modules/Claude.Testing.md
+```markdown
+# Claude.Testing
+
+- **Purpose**: Provide comprehensive testing framework with unit, integration, and E2E testing capabilities ensuring 100% coverage across all modules
+- **Scope (in/out)**:
+  - **In**: Pytest backend testing, Vitest frontend testing, Playwright E2E testing, test data fixtures, mocking frameworks, coverage reporting, CI/CD integration
+  - **Out**: Production monitoring (handled by Infrastructure), user acceptance testing (handled by UserInterface), performance benchmarking (handled by specific modules)
+- **Public API (signatures, inputs/outputs, errors)**:
+  - `TestRunner.run_unit_tests() → TestResults`
+  - `TestRunner.run_integration_tests() → TestResults`
+  - `PlaywrightRunner.run_e2e_tests() → E2EResults`
+  - `CoverageReporter.generate_report() → CoverageReport`
+  - `MockDataFactory.create_stock_data(symbol) → MockStockData`
+- **Data contracts (schemas, invariants)**:
+  - TestResults: total_tests(int≥0), passed(int≥0), failed(int≥0), coverage_percentage(0≤float≤100), duration_ms(int>0)
+  - MockStockData: symbol(str), prices(Array<float>), volume(Array<int>), timestamps(Array<datetime>), valid_date_range(boolean)
+  - CoverageReport: module_name(str), line_coverage(0≤float≤100), branch_coverage(0≤float≤100), function_coverage(0≤float≤100)
+  - E2EResults: scenarios_run(int≥0), scenarios_passed(int≥0), browser_coverage(Array<string>), screenshots(Array<string>)
+- **Dependencies (internal/external)**:
+  - **Internal**: All modules (StockAnalysis, MarketData, Authentication, UserInterface, DataSources, Infrastructure)
+  - **External**: pytest, pytest-asyncio, pytest-cov, vitest, playwright, faker, factory-boy, responses, aioresponses
+- **State & concurrency model**: Stateless test execution with isolated test environments, parallel test execution with resource locking, deterministic test data generation
+- **Failure modes & retries**: Test environment isolation prevents cross-test contamination; flaky test detection with 3 retries; test data cleanup on failure
+- **Performance/SLOs**: Unit tests <10s total, integration tests <60s total, E2E tests <300s total, 100% line/branch/function coverage mandatory
+- **Security/permissions**: Test environment isolation, no production data access, mock credential management, secure test data generation
+- **Observability (logs/metrics/traces)**: Test execution timing, coverage trends, failure analysis, flaky test detection, CI/CD integration metrics
+- **Change risks & migration notes**: New modules require test specs; coverage thresholds block deployment; test data schema changes need fixture updates
+
+## TDD: Requirements → Tests
+
+### REQ-TEST-01: 100% code coverage enforcement with branch and function coverage
+- **Unit tests**:
+  - UT-TEST-01.1: Given module with uncovered lines When run_coverage_check() Then fail build and report missing lines
+  - UT-TEST-01.2: Given module with uncovered branches When run_coverage_check() Then fail build and report missing branches
+  - UT-TEST-01.3: Given module with 100% coverage When run_coverage_check() Then pass and generate coverage badge
+- **Edge/negative/property tests**:
+  - ET-TEST-01.1: Given malformed source code When calculate_coverage() Then handle gracefully and report parsing errors
+  - ET-TEST-01.2: Given dynamic code execution When measure_coverage() Then capture runtime coverage accurately
+  - PT-TEST-01.1: Property: coverage percentage monotonic with test additions, no false positives in coverage reporting
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock coverage.py with controllable coverage scenarios
+  - Stub file system for coverage report generation
+  - Fake source code with known coverage patterns
+- **Coverage mapping**:
+  - Lines/branches/functions covered: CoverageReporter, CoverageEnforcer, coverage_check(), generate_badge()
+
+### REQ-TEST-02: Comprehensive mock data generation for all trading scenarios
+- **Unit tests**:
+  - UT-TEST-02.1: Given stock symbol When generate_mock_price_data() Then return realistic OHLCV data with proper trends
+  - UT-TEST-02.2: Given market scenario When generate_mock_market_data() Then return consistent index and sentiment data
+  - UT-TEST-02.3: Given user profile When generate_mock_user_data() Then return valid user with proper permissions
+- **Edge/negative/property tests**:
+  - ET-TEST-02.1: Given extreme market conditions When generate_mock_data() Then handle edge cases like market crashes
+  - ET-TEST-02.2: Given invalid input parameters When create_mock_data() Then validate inputs and return appropriate errors
+  - PT-TEST-02.1: Property: generated data maintains financial constraints (volume≥0, price>0), temporal consistency
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock external APIs with deterministic responses
+  - Stub random number generation for reproducible tests
+  - Fake time providers for temporal testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: MockDataFactory, generate_stock_data(), generate_user_data(), validate_mock_data()
+
+### REQ-TEST-03: Playwright E2E testing with multi-browser support and CI integration
+- **Unit tests**:
+  - UT-TEST-03.1: Given browser configuration When launch_playwright() Then start browser with proper capabilities
+  - UT-TEST-03.2: Given E2E test scenario When execute_test() Then navigate UI and validate interactions
+  - UT-TEST-03.3: Given test failure When capture_evidence() Then save screenshots and logs for debugging
+- **Edge/negative/property tests**:
+  - ET-TEST-03.1: Given browser crash When handle_browser_failure() Then restart browser and retry test
+  - ET-TEST-03.2: Given network interruption When E2E_test_running() Then handle gracefully with timeout
+  - PT-TEST-03.1: Property: tests idempotent across browsers, UI state consistent after test completion
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock backend APIs with controllable responses
+  - Stub browser APIs for headless testing
+  - Fake network conditions for resilience testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: PlaywrightRunner, execute_e2e_test(), capture_screenshot(), browser_manager()
+
+### Traceability Matrix: REQ-IDs ↔ Tests
+| REQ-ID | Unit Tests | Edge Tests | Property Tests | Integration Tests |
+|--------|------------|------------|----------------|-------------------|
+| REQ-TEST-01 | UT-TEST-01.1-3 | ET-TEST-01.1-2 | PT-TEST-01.1 | IT-TEST-01 |
+| REQ-TEST-02 | UT-TEST-02.1-3 | ET-TEST-02.1-2 | PT-TEST-02.1 | IT-TEST-02 |
+| REQ-TEST-03 | UT-TEST-03.1-3 | ET-TEST-03.1-2 | PT-TEST-03.1 | IT-TEST-03 |
+
+## Implementation Guidance (after specs)
+
+### Algorithms/Flow
+1. **Test Execution**: discover_tests() → setup_environment() → run_parallel_tests() → collect_results() → generate_reports()
+2. **Coverage Analysis**: instrument_code() → execute_tests() → measure_coverage() → enforce_thresholds() → generate_badges()
+3. **E2E Testing**: start_services() → launch_browsers() → execute_scenarios() → capture_evidence() → cleanup()
+
+### Pseudocode (reference)
+```python
+class TestRunner:
+    async def run_comprehensive_tests(self) -> TestResults:
+        # Setup test environment
+        await self.setup_test_db()
+        await self.start_mock_services()
+
+        # Run unit tests with coverage
+        unit_results = await self.run_unit_tests_with_coverage()
+        if unit_results.coverage < 100:
+            raise CoverageThresholdError(f"Coverage {unit_results.coverage}% < 100%")
+
+        # Run integration tests
+        integration_results = await self.run_integration_tests()
+
+        # Run E2E tests
+        e2e_results = await self.run_e2e_tests()
+
+        # Generate comprehensive report
+        return TestResults(
+            unit=unit_results,
+            integration=integration_results,
+            e2e=e2e_results,
+            total_coverage=unit_results.coverage
+        )
+```
+
+### Error Handling & Retries
+- **Flaky tests**: 3 automatic retries with exponential backoff, quarantine persistently failing tests
+- **Environment failures**: Clean test database recreation, service restart, browser session reset
+- **Coverage failures**: Detailed line-by-line reporting, suggest missing test cases
+- **CI integration**: Fail-fast on coverage violations, detailed failure reports, parallel execution
+
+### Config/flags
+```python
+TESTING_CONFIG = {
+    "COVERAGE_THRESHOLD": 100,  # Mandatory 100% coverage
+    "PARALLEL_WORKERS": 4,
+    "TEST_TIMEOUT": 300,  # 5 minutes max per test
+    "RETRY_FLAKY_TESTS": 3,
+    "BROWSER_HEADLESS": True,
+    "MOCK_EXTERNAL_APIS": True,
+    "TEST_DB_URL": "postgresql://test:test@localhost:5432/test_db",
+    "E2E_BROWSERS": ["chromium", "firefox", "webkit"],
+    "COVERAGE_FORMATS": ["html", "xml", "json", "lcov"]
+}
+```
+```
+
+### docs/claude/modules/Claude.UserInterface.md
+```markdown
+# Claude.UserInterface
+
+- **Purpose**: Provide responsive, accessible frontend interface with state management, routing, and real-time updates for trading platform users
+- **Scope (in/out)**:
+  - **In**: React components, routing, state management (Zustand + React Query), responsive design, error boundaries, form validation, WebSocket integration
+  - **Out**: Backend API logic (handled by other modules), data persistence (handled by Infrastructure), business calculations (handled by StockAnalysis/MarketData)
+- **Public API (signatures, inputs/outputs, errors)**:
+  - Routes: `/`, `/stock/:symbol`, `/market`, `/settings`, `/about`
+  - Components: `<Layout />`, `<Dashboard />`, `<StockAnalysis />`, `<LoginForm />`, `<ErrorBoundary />`
+  - Hooks: `useStockData(symbol)`, `useMarketData()`, `useAuth()`, `useWebSocket()`
+  - State: `useAuthStore()`, `useMarketStore()`, `useUIStore()`
+- **Data contracts (schemas, invariants)**:
+  - AuthState: isAuthenticated(boolean), user(UserProfile|null), loading(boolean), error(string|null)
+  - MarketState: stockPrices(Map<string, StockPrice>), watchlists(Array), isConnected(boolean), lastUpdate(timestamp)
+  - UIState: theme("light"|"dark"|"system"), sidebarOpen(boolean), notifications(Array), screenSize(string)
+  - RouteParams: symbol(valid_stock_symbol), period(valid_timeframe), filters(object)
+- **Dependencies (internal/external)**:
+  - **Internal**: Authentication (JWT tokens), StockAnalysis (price/technical data), MarketData (real-time updates), Infrastructure (WebSocket)
+  - **External**: React 18, TypeScript, Vite, TailwindCSS, React Router, Zustand, React Query, Socket.io-client
+- **State & concurrency model**: Hybrid state management with Zustand for client state, React Query for server state, optimistic updates with rollback on error
+- **Failure modes & retries**: Network errors → retry with exponential backoff; component errors → error boundary isolation; WebSocket disconnect → auto-reconnection
+- **Performance/SLOs**: <2s initial load, <100ms state updates, <50ms component renders, <500ms route transitions, 60fps animations
+- **Security/permissions**: XSS protection via React, CSRF protection via tokens, input sanitization, secure token storage, no sensitive data in localStorage
+- **Observability (logs/metrics/traces)**: User interaction tracking, performance metrics, error tracking, route timing, component render counts
+- **Change risks & migration notes**: State schema changes need migration functions; React version updates require dependency testing; design system changes affect all components
+
+## TDD: Requirements → Tests
+
+### REQ-UI-01: Responsive layout with mobile-first design and accessibility
+- **Unit tests**:
+  - UT-UI-01.1: Given mobile viewport (320px) When render Layout Then show hamburger menu and collapse sidebar
+  - UT-UI-01.2: Given desktop viewport (1024px) When render Layout Then show full navigation and expanded sidebar
+  - UT-UI-01.3: Given keyboard navigation When tab through components Then focus follows logical order with visible indicators
+- **Edge/negative/property tests**:
+  - ET-UI-01.1: Given extremely narrow viewport (100px) When render Then maintain minimum usable layout
+  - ET-UI-01.2: Given screen reader enabled When navigate interface Then announce all interactive elements
+  - PT-UI-01.1: Property: all interactive elements have aria-labels, color contrast ≥ 4.5:1, touch targets ≥ 44px
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock window.matchMedia for viewport testing
+  - Stub ResizeObserver with controllable viewport changes
+  - Fake touch events for mobile interaction testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: Layout component, responsive hooks, accessibility helpers, breakpoint utilities
+
+### REQ-UI-02: State management with Zustand and React Query integration
+- **Unit tests**:
+  - UT-UI-02.1: Given user login action When updateAuthState() Then persist authentication and sync across components
+  - UT-UI-02.2: Given stock price update When useStockData() Then update cache and trigger re-render
+  - UT-UI-02.3: Given network error When API call fails Then show error state and enable retry
+- **Edge/negative/property tests**:
+  - ET-UI-02.1: Given localStorage unavailable When persist state Then gracefully degrade without errors
+  - ET-UI-02.2: Given stale cache data When network available Then background refresh and update
+  - PT-UI-02.1: Property: state updates are atomic, no intermediate invalid states, cache coherence maintained
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock Zustand store with controllable state scenarios
+  - Stub React Query with deterministic cache behavior
+  - Fake localStorage with quota exceeded simulation
+- **Coverage mapping**:
+  - Lines/branches/functions covered: useAuthStore, useMarketStore, useUIStore, React Query hooks, cache invalidation
+
+### REQ-UI-03: Real-time WebSocket integration with connection management
+- **Unit tests**:
+  - UT-UI-03.1: Given WebSocket connection When price update received Then update UI without full re-render
+  - UT-UI-03.2: Given connection lost When useWebSocket() Then show disconnected state and attempt reconnection
+  - UT-UI-03.3: Given subscription to symbol When user navigates away Then unsubscribe to prevent memory leaks
+- **Edge/negative/property tests**:
+  - ET-UI-03.1: Given malformed WebSocket message When received Then ignore and maintain connection
+  - ET-UI-03.2: Given rapid connection/disconnection When network unstable Then debounce reconnection attempts
+  - PT-UI-03.1: Property: subscriptions cleaned up on unmount, no duplicate subscriptions, message order preserved
+- **Test doubles (mocks/stubs/fakes) and seams**:
+  - Mock WebSocket with controllable connect/disconnect scenarios
+  - Stub message queue with deterministic delivery
+  - Fake network conditions for connection testing
+- **Coverage mapping**:
+  - Lines/branches/functions covered: useWebSocket hook, connection manager, subscription cleanup, message handlers
+
+### Traceability Matrix: REQ-IDs ↔ Tests
+| REQ-ID | Unit Tests | Edge Tests | Property Tests | Integration Tests |
+|--------|------------|------------|----------------|-------------------|
+| REQ-UI-01 | UT-UI-01.1-3 | ET-UI-01.1-2 | PT-UI-01.1 | IT-UI-01 |
+| REQ-UI-02 | UT-UI-02.1-3 | ET-UI-02.1-2 | PT-UI-02.1 | IT-UI-02 |
+| REQ-UI-03 | UT-UI-03.1-3 | ET-UI-03.1-2 | PT-UI-03.1 | IT-UI-03 |
+
+## Implementation Guidance (after specs)
+
+### Algorithms/Flow
+1. **Component Lifecycle**: mount → load_initial_state() → subscribe_to_updates() → handle_user_interactions() → cleanup_on_unmount()
+2. **State Synchronization**: user_action() → optimistic_update() → api_call() → success ? confirm : rollback()
+3. **Route Navigation**: route_change() → load_route_data() → update_breadcrumbs() → render_page_component()
+
+### Pseudocode (reference)
+```typescript
+const useStockData = (symbol: string) => {
+  const { data, error, isLoading } = useQuery(
+    ['stock', symbol],
+    () => fetchStockPrice(symbol),
+    {
+      staleTime: 60000, // 1 minute
+      refetchInterval: 30000, // 30 seconds
+      onError: (error) => useUIStore.getState().showNotification({
+        type: 'error',
+        message: `Failed to load ${symbol} data`
+      })
+    }
+  );
+
+  // Subscribe to WebSocket updates
+  useEffect(() => {
+    const unsubscribe = websocketManager.subscribe(symbol, (update) => {
+      queryClient.setQueryData(['stock', symbol], update);
+    });
+
+    return unsubscribe;
+  }, [symbol]);
+
+  return { data, error, isLoading };
+};
+```
+
+### Error Handling & Retries
+- **Component errors**: Error boundaries isolate failures, show fallback UI, enable retry
+- **Network errors**: Exponential backoff (1s, 2s, 4s), max 3 retries, user notification
+- **State corruption**: Reset to last known good state, re-fetch critical data
+- **WebSocket errors**: Auto-reconnect with increasing delays, fallback to polling
+
+### Config/flags
+```typescript
+UI_CONFIG = {
+  "WEBSOCKET_RECONNECT_INTERVAL": 5000,
+  "MAX_RECONNECT_ATTEMPTS": 10,
+  "CACHE_STALE_TIME": 60000,
+  "REFETCH_INTERVAL": 30000,
+  "ANIMATION_DURATION": 300,
+  "BREAKPOINTS": {
+    "mobile": 768,
+    "tablet": 1024,
+    "desktop": 1280
+  },
+  "THEME_STORAGE_KEY": "turtle-trading-theme"
+}
+```
+```
+
+### docs/claude/tests/config/coverage.md
+```markdown
+# Coverage Configuration (100% enforced)
+
+- **Tooling (language/framework)**:
+  - **Backend**: Python with pytest-cov and coverage.py
+  - **Frontend**: Vitest with v8 coverage provider
+  - **E2E**: Playwright with code coverage collection
+  - **Integration**: Combined coverage reporting across all layers
+
+- **Commands to run locally**:
+
+## Backend Coverage (Python/FastAPI)
+```bash
+# Install coverage dependencies
+pip install pytest pytest-cov pytest-asyncio coverage
+
+# Run unit tests with coverage
+cd backend
+pytest --cov=app --cov-report=html --cov-report=term --cov-report=xml --cov-fail-under=100
+
+# Detailed coverage report
+coverage report --show-missing --fail-under=100
+
+# Generate HTML coverage report
+coverage html
+open htmlcov/index.html  # View detailed coverage report
+
+# Coverage for specific modules
+pytest tests/test_stock_service.py --cov=app.services.stock_service --cov-report=term-missing
+```
+
+## Frontend Coverage (TypeScript/React/Vitest)
+```bash
+# Install testing dependencies
+cd frontend
+npm install --save-dev vitest @vitest/ui @testing-library/react @testing-library/jest-dom
+
+# Run unit tests with coverage
+npm run test:coverage
+
+# Generate detailed coverage report
+npm run test:coverage -- --reporter=html
+open coverage/index.html
+
+# Watch mode with coverage
+npm run test:watch -- --coverage
+
+# Coverage for specific components
+npx vitest run --coverage src/components/StockAnalysis.test.tsx
+```
+
+## E2E Coverage (Playwright)
+```bash
+# Install Playwright coverage tools
+cd tests
+npm install --save-dev @playwright/test playwright-coverage
+
+# Run E2E tests with coverage
+npm run test:e2e:coverage
+
+# Generate combined coverage report (frontend + E2E)
+npm run coverage:merge
+
+# View E2E coverage report
+open playwright-report/coverage/index.html
+```
+
+## Combined Coverage Report
+```bash
+# Generate unified coverage report across all layers
+cd /Users/kiranreddyghanta/TurtleTrading
+make coverage:all
+
+# Commands defined in Makefile:
+# make coverage:backend    # Backend Python coverage
+# make coverage:frontend   # Frontend TypeScript coverage
+# make coverage:e2e        # E2E Playwright coverage
+# make coverage:merge      # Merge all coverage reports
+# make coverage:enforce    # Fail if any module < 100%
+```
+
+- **CI configuration (threshold gates)**:
+
+## GitHub Actions Workflow (.github/workflows/test-coverage.yml)
+```yaml
+name: Test Coverage Enforcement
+
+on: [push, pull_request]
+
+jobs:
+  backend-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest-cov coverage
+
+      - name: Run backend tests with coverage
+        run: |
+          cd backend
+          pytest --cov=app --cov-report=xml --cov-fail-under=100
+
+      - name: Upload backend coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: backend/coverage.xml
+          flags: backend
+          fail_ci_if_error: true
+
+  frontend-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run frontend tests with coverage
+        run: |
+          cd frontend
+          npm run test:coverage -- --run
+
+      - name: Enforce 100% coverage threshold
+        run: |
+          cd frontend
+          npm run coverage:check  # Custom script that fails if < 100%
+
+      - name: Upload frontend coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: true
+
+  e2e-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd tests
+          npm ci
+          npx playwright install
+
+      - name: Start services for E2E tests
+        run: |
+          docker-compose up -d --build
+          # Wait for services to be ready
+          ./scripts/wait-for-services.sh
+
+      - name: Run E2E tests with coverage
+        run: |
+          cd tests
+          npm run test:e2e:coverage
+
+      - name: Upload E2E coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: tests/coverage/lcov.info
+      
+END_PART_AD
