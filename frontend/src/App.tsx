@@ -17,6 +17,7 @@ import Register from './pages/Register';
 import YahooDemo from './pages/YahooDemo';
 import TestPage from './pages/TestPage';
 import ErrorTestPage from './pages/ErrorTestPage';
+import Backtesting from './pages/Backtesting';
 import { ErrorBoundaryWithStore } from './components/ErrorBoundary';
 import { RouteErrorFallback } from './components/RouteErrorBoundary';
 import AsyncErrorBoundary from './components/AsyncErrorBoundary';
@@ -113,6 +114,14 @@ function App() {
                     element={
                       <AsyncErrorBoundary isolate>
                         <About />
+                      </AsyncErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="backtesting"
+                    element={
+                      <AsyncErrorBoundary isolate>
+                        <Backtesting />
                       </AsyncErrorBoundary>
                     }
                   />

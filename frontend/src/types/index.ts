@@ -400,3 +400,300 @@ export interface FeatureFlags {
   real_time_data: boolean;
   mobile_app: boolean;
 }
+
+// Portfolio Backtesting Types
+export interface TradingStrategy {
+  name: string;
+  description: string;
+  strategy_type: 'momentum' | 'mean_reversion' | 'trend_following' | 'custom';
+  rules: TradingRule[];
+  entry_conditions: TradingCondition[];
+  exit_conditions: TradingCondition[];
+  risk_management: RiskManagement;
+  position_sizing: PositionSizing;
+}
+
+export interface TradingRule {
+  id: string;
+  name: string;
+  indicator: string;
+  condition: 'above' | 'below' | 'cross_above' | 'cross_below' | 'equals';
+  value: number;
+  weight: number;
+}
+
+export interface TradingCondition {
+  indicator: string;
+  operator: '>' | '<' | '>=' | '<=' | '==' | '!=';
+  value: number;
+  timeframe?: string;
+}
+
+export interface RiskManagement {
+  stop_loss_pct?: number;
+  take_profit_pct?: number;
+  max_position_size: number;
+  max_portfolio_risk: number;
+  max_daily_trades: number;
+  drawdown_limit: number;
+}
+
+export interface PositionSizing {
+  method: 'fixed' | 'percent_equity' | 'volatility_normalized' | 'kelly_criterion';
+  size: number;
+  lookback_period?: number;
+  risk_free_rate?: number;
+  confidence_level?: number;
+}
+
+export interface BacktestConfiguration {
+  strategy: TradingStrategy;
+  universe: string[];
+  start_date: string;
+  end_date: string;
+  initial_capital: number;
+  transaction_costs: TransactionCosts;
+  slippage_model: SlippageModel;
+  benchmark_symbols: string[];
+  walk_forward?: WalkForwardConfig;
+  rebalancing_frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly';
+  max_positions: number;
+  cash_buffer: number;
+}
+
+export interface TransactionCosts {
+  per_trade_cost: number;
+  percentage_cost: number;
+  min_commission: number;
+  market_impact_model: 'linear' | 'square_root' | 'none';
+  spread_cost_bps: number;
+}
+
+export interface SlippageModel {
+  model_type: 'linear' | 'square_root' | 'constant';
+  slippage_bps: number;
+  market_impact_coeff: number;
+  temporary_impact_decay: number;
+}
+
+export interface WalkForwardConfig {
+  training_period_months: number;
+  validation_period_months: number;
+  step_size_months: number;
+  min_training_samples: number;
+}
+
+export interface BacktestRequest {
+  configuration: BacktestConfiguration;
+  save_results: boolean;
+  email_report: boolean;
+}
+
+export interface BacktestStatus {
+  job_id: string;
+  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  progress: number;
+  message: string;
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
+  updated_at?: string;
+  configuration?: BacktestConfiguration;
+  result?: BacktestResult;
+  error?: string;
+}
+
+export interface BacktestResult {
+  backtest_id: string;
+  configuration: BacktestConfiguration;
+  performance_metrics: PerformanceMetrics;
+  equity_curve: EquityCurvePoint[];
+  trade_log: Trade[];
+  risk_metrics: RiskMetrics;
+  benchmark_comparison: BenchmarkComparison;
+  tearsheet_data: TearsheetData;
+  walk_forward_results?: WalkForwardResult[];
+  total_runtime_seconds: number;
+  warnings: string[];
+}
+
+export interface PerformanceMetrics {
+  total_return: number;
+  annualized_return: number;
+  cagr: number;
+  volatility: number;
+  sharpe_ratio: number;
+  sortino_ratio: number;
+  calmar_ratio: number;
+  max_drawdown: number;
+  max_drawdown_duration: number;
+  win_rate: number;
+  profit_factor: number;
+  avg_win: number;
+  avg_loss: number;
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  largest_win: number;
+  largest_loss: number;
+  avg_holding_period_days: number;
+  turnover_rate: number;
+  beta: number;
+  alpha: number;
+  tracking_error: number;
+  information_ratio: number;
+  skewness: number;
+  kurtosis: number;
+  value_at_risk_95: number;
+  expected_shortfall_95: number;
+}
+
+export interface EquityCurvePoint {
+  date: string;
+  portfolio_value: number;
+  cash: number;
+  positions_value: number;
+  daily_return: number;
+  cumulative_return: number;
+  drawdown: number;
+  benchmark_value?: number;
+  num_positions: number;
+}
+
+export interface Trade {
+  trade_id: string;
+  symbol: string;
+  entry_date: string;
+  exit_date?: string;
+  side: 'long' | 'short';
+  quantity: number;
+  entry_price: number;
+  exit_price?: number;
+  entry_signal: string;
+  exit_signal?: string;
+  pnl: number;
+  pnl_percent: number;
+  holding_period_days: number;
+  transaction_costs: number;
+  slippage_costs: number;
+  position_size_pct: number;
+  is_open: boolean;
+}
+
+export interface RiskMetrics {
+  var_99: number;
+  var_95: number;
+  cvar_99: number;
+  cvar_95: number;
+  maximum_leverage: number;
+  avg_leverage: number;
+  correlation_to_market: number;
+  sector_exposure: Record<string, number>;
+  concentration_risk: number;
+  tail_ratio: number;
+  common_sense_ratio: number;
+  stability_of_timeseries: number;
+  downside_risk: number;
+}
+
+export interface BenchmarkComparison {
+  benchmark_symbol: string;
+  benchmark_total_return: number;
+  benchmark_annualized_return: number;
+  benchmark_volatility: number;
+  benchmark_sharpe: number;
+  benchmark_max_drawdown: number;
+  excess_return: number;
+  tracking_error: number;
+  information_ratio: number;
+  up_capture: number;
+  down_capture: number;
+  correlation: number;
+  beta: number;
+  alpha: number;
+}
+
+export interface TearsheetData {
+  monthly_returns: Record<string, Record<string, number>>;
+  rolling_performance: RollingPerformancePoint[];
+  drawdown_periods: DrawdownPeriod[];
+  return_distribution: DistributionStats;
+  factor_exposures: Record<string, number>;
+  sector_allocation: Record<string, number>;
+  top_holdings: Holding[];
+  position_concentration: ConcentrationMetrics;
+}
+
+export interface RollingPerformancePoint {
+  date: string;
+  rolling_return_1y: number;
+  rolling_volatility_1y: number;
+  rolling_sharpe_1y: number;
+  rolling_max_dd_1y: number;
+}
+
+export interface DrawdownPeriod {
+  start_date: string;
+  end_date: string;
+  recovery_date?: string;
+  peak_value: number;
+  trough_value: number;
+  drawdown_pct: number;
+  duration_days: number;
+  recovery_days?: number;
+}
+
+export interface DistributionStats {
+  mean: number;
+  std: number;
+  skewness: number;
+  kurtosis: number;
+  percentiles: Record<string, number>;
+  var_95: number;
+  var_99: number;
+}
+
+export interface Holding {
+  symbol: string;
+  weight: number;
+  value: number;
+  shares: number;
+  avg_price: number;
+  unrealized_pnl: number;
+  sector?: string;
+}
+
+export interface ConcentrationMetrics {
+  herfindahl_index: number;
+  top_5_concentration: number;
+  top_10_concentration: number;
+  effective_positions: number;
+}
+
+export interface WalkForwardResult {
+  period_id: string;
+  training_start: string;
+  training_end: string;
+  validation_start: string;
+  validation_end: string;
+  in_sample_metrics: PerformanceMetrics;
+  out_of_sample_metrics: PerformanceMetrics;
+  strategy_parameters: Record<string, any>;
+  optimization_score: number;
+}
+
+// Backtesting Form Types
+export interface BacktestFormData {
+  strategy: TradingStrategy;
+  universe: string[];
+  startDate: string;
+  endDate: string;
+  initialCapital: number;
+  transactionCosts: TransactionCosts;
+  slippageModel: SlippageModel;
+  benchmarkSymbols: string[];
+  walkForward?: WalkForwardConfig;
+  rebalancingFrequency: 'daily' | 'weekly' | 'monthly' | 'quarterly';
+  maxPositions: number;
+  cashBuffer: number;
+}

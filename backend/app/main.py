@@ -36,6 +36,7 @@ from app.api.routes import api_router
 from app.services.websocket_manager import ConnectionManager
 from app.services.redis_pubsub import RedisStreamer
 from app.services.market_data_streamer import MarketDataStreamer
+from app.services.scanner_websocket_manager import initialize_scanner_websocket_manager, get_scanner_websocket_manager
 
 # Set up structured logging
 logger = setup_logging()
@@ -49,6 +50,9 @@ redis_streamer = None
 
 # Market data streaming service
 market_streamer = None
+
+# Scanner WebSocket manager
+scanner_websocket_manager = None
 
 
 @asynccontextmanager
@@ -79,7 +83,7 @@ async def lifespan(app: FastAPI):
         await initialize_external_rate_limiter()
 
         # Initialize Redis streaming service
-        global redis_streamer, market_streamer
+        global redis_streamer, market_streamer, scanner_websocket_manager
         try:
             redis_streamer = RedisStreamer(manager)
             await redis_streamer.start()
@@ -107,6 +111,18 @@ async def lifespan(app: FastAPI):
                 }
             )
 
+            # Initialize scanner WebSocket manager
+            scanner_websocket_manager = initialize_scanner_websocket_manager(manager)
+            await scanner_websocket_manager.start_services()
+
+            app_logger.info(
+                "✅ Scanner WebSocket service initialized successfully",
+                extra={
+                    "log_type": "scanner_websocket",
+                    "event": "initialization"
+                }
+            )
+
         except Exception as redis_error:
             app_logger.warning(
                 f"⚠️ Redis/Market streaming services failed to start: {redis_error}",
@@ -118,6 +134,7 @@ async def lifespan(app: FastAPI):
             # Continue without streaming services
             redis_streamer = None
             market_streamer = None
+            scanner_websocket_manager = None
 
         # Start background tasks
         # Additional background tasks can be added here
@@ -144,6 +161,19 @@ async def lifespan(app: FastAPI):
         )
 
         # Stop streaming services
+        if scanner_websocket_manager:
+            try:
+                await scanner_websocket_manager.stop_services()
+                app_logger.info(
+                    "✅ Scanner WebSocket service stopped",
+                    extra={"log_type": "scanner_websocket", "event": "shutdown"}
+                )
+            except Exception as e:
+                app_logger.error(
+                    f"❌ Error stopping scanner WebSocket service: {e}",
+                    extra={"log_type": "scanner_websocket", "event": "shutdown_error"}
+                )
+
         if market_streamer:
             try:
                 await market_streamer.stop()
@@ -200,8 +230,16 @@ openapi_tags = [
         "description": "Real-time WebSocket connections for live market data streaming",
     },
     {
+        "name": "Options Analytics",
+        "description": "Options pricing, Greeks calculation, implied volatility analysis, and options chain data using Black-Scholes and Binomial models",
+    },
+    {
         "name": "health",
         "description": "System health checks and service monitoring endpoints",
+    },
+    {
+        "name": "scanners",
+        "description": "Multi-asset scanners for stocks, crypto, and forex with advanced filtering, aggregation, and real-time alerts",
     },
 ]
 
@@ -355,7 +393,13 @@ async def root():
             "Technical analysis indicators",
             "Sentiment analysis",
             "WebSocket streaming",
-            "Portfolio management"
+            "Portfolio management",
+            "Options pricing & Greeks",
+            "Implied volatility analysis",
+            "Volatility surface modeling",
+            "Multi-asset scanners with advanced filtering",
+            "Scanner result aggregation and insights",
+            "Real-time scanner alerts and notifications"
         ],
         "status": "operational"
     }
@@ -373,6 +417,8 @@ async def health_check():
             streaming_status["redis_streaming"] = redis_streamer.get_status()
         if market_streamer:
             streaming_status["market_streaming"] = market_streamer.get_status()
+        if scanner_websocket_manager:
+            streaming_status["scanner_websocket"] = scanner_websocket_manager.get_statistics()
 
         health_status["metrics"] = {
             "active_websocket_connections": len(manager.active_connections),
@@ -435,6 +481,8 @@ async def detailed_health_check():
             streaming_status["redis_streaming"] = redis_streamer.get_status()
         if market_streamer:
             streaming_status["market_streaming"] = market_streamer.get_status()
+        if scanner_websocket_manager:
+            streaming_status["scanner_websocket"] = scanner_websocket_manager.get_statistics()
 
         health_status["metrics"].update({
             "active_websocket_connections": len(manager.active_connections),
@@ -509,40 +557,53 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 # Handle subscription to specific data streams
                 symbols = message.get("symbols", [])
                 await manager.subscribe_to_symbols(client_id, symbols)
-                
+
                 log_websocket_event(
-                    "subscription", 
-                    client_id, 
+                    "subscription",
+                    client_id,
                     symbols=symbols,
                     symbol_count=len(symbols)
                 )
-                
+
                 # Send confirmation
                 await manager.send_personal_message({
                     "type": "subscription_confirmed",
                     "symbols": symbols,
                     "timestamp": datetime.utcnow().isoformat()
                 }, client_id)
-                
+
             elif message.get("type") == "unsubscribe":
                 symbols = message.get("symbols", [])
                 await manager.unsubscribe_from_symbols(client_id, symbols)
-                
+
                 log_websocket_event(
-                    "unsubscription", 
-                    client_id, 
+                    "unsubscription",
+                    client_id,
                     symbols=symbols,
                     symbol_count=len(symbols)
                 )
-                
+
                 await manager.send_personal_message({
-                    "type": "unsubscription_confirmed", 
+                    "type": "unsubscription_confirmed",
                     "symbols": symbols,
                     "timestamp": datetime.utcnow().isoformat()
                 }, client_id)
+
+            elif message.get("type", "").startswith("subscribe_scanner") or message.get("type", "").startswith("scanner_") or message.get("type") in ["subscribe_alerts", "unsubscribe_alerts", "subscribe_aggregation", "run_scanner", "get_scanner_status"]:
+                # Handle scanner-related messages
+                if scanner_websocket_manager:
+                    await scanner_websocket_manager.handle_message(client_id, message)
+                else:
+                    await manager.send_personal_message({
+                        "type": "error",
+                        "error": "Scanner WebSocket service is not available",
+                        "timestamp": datetime.utcnow().isoformat()
+                    }, client_id)
                 
     except WebSocketDisconnect:
         manager.disconnect(client_id)
+        if scanner_websocket_manager:
+            scanner_websocket_manager.cleanup_client(client_id)
         log_websocket_event("disconnected", client_id)
     
     except Exception as e:
@@ -557,6 +618,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             exc_info=True
         )
         manager.disconnect(client_id)
+        if scanner_websocket_manager:
+            scanner_websocket_manager.cleanup_client(client_id)
 
 
 @app.get("/ws/test")

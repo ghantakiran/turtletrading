@@ -65,14 +65,29 @@ jobs:
         flake8 app/ tests/
         mypy app/
 
+    - name: Install mathematical libraries for options pricing
+      run: |
+        cd backend
+        pip install numpy scipy
+
     - name: Run backend unit tests with 100% coverage
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turtletrading_test
+        REDIS_URL: redis://localhost:6379/0
+        ENVIRONMENT: test
+        ALPHA_VANTAGE_API_KEY: test_key
+      run: |
+        cd backend
+        pytest --cov=app --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+
+    - name: Run options pricing engine tests with golden file validation
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turtletrading_test
         REDIS_URL: redis://localhost:6379/0
         ENVIRONMENT: test
       run: |
         cd backend
-        pytest --cov=app --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+        pytest tests/test_pricing_engines.py -v --tb=short
 
     - name: Upload backend coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -198,9 +213,20 @@ jobs:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turtletrading_test
         REDIS_URL: redis://localhost:6379/0
         ENVIRONMENT: test
+        ALPHA_VANTAGE_API_KEY: test_key
       run: |
         cd backend
         pytest tests/integration/ --cov=app --cov-branch --cov-report=xml --cov-fail-under=100
+
+    - name: Run options API integration tests
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turtletrading_test
+        REDIS_URL: redis://localhost:6379/0
+        ENVIRONMENT: test
+        ALPHA_VANTAGE_API_KEY: test_key
+      run: |
+        cd backend
+        pytest tests/test_options_api.py -v --tb=short
 
     - name: Upload integration coverage
       uses: codecov/codecov-action@v3
@@ -294,9 +320,18 @@ jobs:
     - name: Run Playwright E2E tests
       env:
         CI: true
+        ALPHA_VANTAGE_API_KEY: test_key
       run: |
         cd tests
         npx playwright test --reporter=html
+
+    - name: Run Options Analytics E2E workflow tests
+      env:
+        CI: true
+        ALPHA_VANTAGE_API_KEY: test_key
+      run: |
+        cd tests
+        npx playwright test e2e/08-options-analytics-workflow.spec.ts --reporter=html
 
     - name: Upload Playwright test results
       uses: actions/upload-artifact@v3
@@ -362,6 +397,9 @@ jobs:
         echo "| Frontend Unit | 100% | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "| Integration | 100% | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "| E2E Tests | ✅ | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| Options Pricing Engines | 100% | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| Options API Endpoints | 100% | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| Options Analytics E2E | ✅ | ✅ |" >> $GITHUB_STEP_SUMMARY
 
     - name: Comment coverage on PR
       if: github.event_name == 'pull_request'
@@ -372,7 +410,7 @@ jobs:
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '🎯 **Coverage Report**: All tests passing with 100% coverage enforcement! ✅'
+            body: '🎯 **Coverage Report**: All tests passing with 100% coverage enforcement! ✅\n\n📊 **Options Analytics**: Mathematical pricing engines, API endpoints, and E2E workflows fully tested! 🔢'
           })
 
 # Security scanning

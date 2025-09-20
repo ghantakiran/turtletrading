@@ -27,6 +27,7 @@ tensorflow==2.15.0
 scikit-learn==1.3.2
 pandas==2.1.4
 numpy==1.24.4
+scipy==1.11.4
 yfinance==0.2.28
 ta==0.10.2
 TA-Lib==0.6.7

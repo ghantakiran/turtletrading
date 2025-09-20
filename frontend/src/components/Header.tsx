@@ -16,6 +16,7 @@ const Header: React.FC<HeaderProps> = ({
   navigation = [
     { name: 'Dashboard', href: '/', icon: '📊' },
     { name: 'Market', href: '/market', icon: '📈' },
+    { name: 'Backtesting', href: '/backtesting', icon: '🎯' },
     { name: 'Settings', href: '/settings', icon: '⚙️' },
     { name: 'About', href: '/about', icon: 'ℹ️' },
   ],
