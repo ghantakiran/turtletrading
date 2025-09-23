@@ -14,8 +14,8 @@ import redis.asyncio as aioredis
 from app.models.sentiment_ner_models import (
     SentimentQueryRequest, SentimentQueryResponse, SentimentAggregation,
     ProcessedContent, RawContent, NamedEntity, SentimentScore, SentimentPolarity,
-    EntityType, ProviderType, ContentType, IngestionRequest, IngestionResponse,
-    BackfillRequest, BackfillResponse, NERAnalysisRequest, NERAnalysisResponse
+    EntityType, ProviderType, ContentType, IngestionRequest, IngestionResponse
+    # NERAnalysisRequest, NERAnalysisResponse  # Temporarily disabled
 )
 from app.services.sentiment_aggregation_service import SentimentAggregationService, create_sentiment_aggregation_service
 from app.services.nlp_pipeline_service import NLPPipelineService, create_nlp_pipeline_service
@@ -270,41 +270,41 @@ async def ingest_content(
         raise HTTPException(status_code=500, detail=f"Error ingesting content: {str(e)}")
 
 
-@router.post("/backfill", response_model=BackfillResponse)
-async def backfill_historical_data(
-    request: BackfillRequest,
-    background_tasks: BackgroundTasks,
-    ingestion_service: ContentIngestionService = Depends(get_ingestion_service)
-):
-    """
-    Backfill historical content data for specified date ranges and tickers.
-
-    Performs historical data ingestion with automatic chunking and
-    background processing to avoid overwhelming data providers.
-    """
-    try:
-        background_tasks.add_task(
-            ingestion_service.backfill_historical_data,
-            start_date=request.start_date,
-            end_date=request.end_date,
-            tickers=request.tickers,
-            providers=request.providers,
-            max_items_per_day=request.max_items_per_day
-        )
-
-        return BackfillResponse(
-            backfill_id=f"backfill_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
-            status="started",
-            start_date=request.start_date,
-            end_date=request.end_date,
-            tickers=request.tickers,
-            providers=request.providers,
-            estimated_completion=datetime.utcnow() + timedelta(hours=1)
-        )
-
-    except Exception as e:
-        logger.error(f"Error starting backfill: {e}")
-        raise HTTPException(status_code=500, detail=f"Error starting backfill: {str(e)}")
+# @router.post("/backfill", response_model=BackfillResponse)
+# async def backfill_historical_data(
+#     request: BackfillRequest,
+#     background_tasks: BackgroundTasks,
+#     ingestion_service: ContentIngestionService = Depends(get_ingestion_service)
+# ):
+#     """
+#     Backfill historical content data for specified date ranges and tickers.
+#
+#     Performs historical data ingestion with automatic chunking and
+#     background processing to avoid overwhelming data providers.
+#     """
+#     try:
+#         background_tasks.add_task(
+#             ingestion_service.backfill_historical_data,
+#             start_date=request.start_date,
+#             end_date=request.end_date,
+#             tickers=request.tickers,
+#             providers=request.providers,
+#             max_items_per_day=request.max_items_per_day
+#         )
+#
+#         return BackfillResponse(
+#             backfill_id=f"backfill_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+#             status="started",
+#             start_date=request.start_date,
+#             end_date=request.end_date,
+#             tickers=request.tickers,
+#             providers=request.providers,
+#             estimated_completion=datetime.utcnow() + timedelta(hours=1)
+#         )
+#
+#     except Exception as e:
+#         logger.error(f"Error starting backfill: {e}")
+#         raise HTTPException(status_code=500, detail=f"Error starting backfill: {str(e)}")
 
 
 @router.get("/ingestion/status", response_model=Dict[str, Any])

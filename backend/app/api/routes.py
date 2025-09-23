@@ -3,7 +3,8 @@ Main API router that includes all endpoint modules
 """
 
 from fastapi import APIRouter
-from app.api.endpoints import stocks, market, sentiment, auth, websocket_info
+from app.api.endpoints import stocks, market, auth, websocket_info
+# from app.api.endpoints import sentiment  # Temporarily disabled for authentication focus
 from app.api.v1 import options, backtest, scanners, regimes
 
 api_router = APIRouter()
@@ -21,11 +22,12 @@ api_router.include_router(
     tags=["market"]
 )
 
-api_router.include_router(
-    sentiment.router,
-    prefix="/sentiment",
-    tags=["sentiment"]
-)
+# Temporarily disabled sentiment module for authentication focus
+# api_router.include_router(
+#     sentiment.router,
+#     prefix="/sentiment",
+#     tags=["sentiment"]
+# )
 
 api_router.include_router(
     auth.router,

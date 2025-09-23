@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List, Dict, Optional, Any, Union, Literal
 from enum import Enum
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator, model_validator
 import uuid
 
 
@@ -186,17 +186,17 @@ class SentimentScore(BaseModel):
             raise ValueError("Sentiment score must be between -1.0 and 1.0")
         return v
 
-    @root_validator
-    def validate_sentiment_scores(cls, values):
-        positive = values.get('positive_score', 0)
-        negative = values.get('negative_score', 0)
-        neutral = values.get('neutral_score', 0)
+    @model_validator(mode='after')
+    def validate_sentiment_scores(self):
+        positive = self.positive_score
+        negative = self.negative_score
+        neutral = self.neutral_score
 
         total = positive + negative + neutral
         if not 0.95 <= total <= 1.05:  # Allow small floating point errors
             raise ValueError("Sentiment scores must sum to approximately 1.0")
 
-        return values
+        return self
 
 
 class ProcessedContent(BaseModel):
