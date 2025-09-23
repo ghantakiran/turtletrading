@@ -1,0 +1,62 @@
+# DVC ignore file - specify files/directories that DVC should ignore
+
+# Add patterns of files/directories that should not be tracked by DVC
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Research artifacts that should not be versioned
+experiments/temp/
+scratch/
+debug/
+temp_data/
+
+# Large model files (use DVC for these)
+# *.h5
+# *.pkl
+# *.joblib
+# *.model

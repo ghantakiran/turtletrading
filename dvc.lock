@@ -1,0 +1,50 @@
+schema: '2.0'
+stages:
+  data_collection:
+    cmd: python3 backend/app/research/pipelines/data_collection.py --symbols AAPL,MSFT
+      --start-date 2024-01-01 --end-date 2024-01-31 --output data/raw/stock_data.parquet
+    deps:
+    - path: backend/app/research/data_pipeline/data_loader.py
+      hash: md5
+      md5: b5fdd3cb794048e3b4568df06d1915e2
+      size: 14521
+    - path: backend/app/research/pipelines/data_collection.py
+      hash: md5
+      md5: ddc7d6adc2a8cfcb5405fc018d016090
+      size: 12750
+    params:
+      params.yaml:
+        data_collection.end_date: '2024-12-31'
+        data_collection.start_date: '2020-01-01'
+        data_collection.symbols:
+        - AAPL
+        - MSFT
+        - GOOGL
+        - AMZN
+        - TSLA
+        - SPY
+        - QQQ
+        - IWM
+        - VIX
+        - XLK
+        - XLV
+        - XLF
+        - XLE
+        - XLU
+    outs:
+    - path: data/raw/market_data.parquet
+      hash: md5
+      md5: 2bc6a42ebee6574801726c3a0c34e4a5
+      size: 8301
+    - path: data/raw/sentiment_data.parquet
+      hash: md5
+      md5: eaf8c6a3333aa50c6e39266fecdc1d4e
+      size: 9508
+    - path: data/raw/stock_data.parquet
+      hash: md5
+      md5: 0faf9b9f8c869cf16d58a62e2aac6295
+      size: 7947
+    - path: metrics/data_collection.json
+      hash: md5
+      md5: 4122231ee4c80f70c04849243491432d
+      size: 447

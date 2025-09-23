@@ -241,6 +241,10 @@ openapi_tags = [
         "name": "scanners",
         "description": "Multi-asset scanners for stocks, crypto, and forex with advanced filtering, aggregation, and real-time alerts",
     },
+    {
+        "name": "regimes",
+        "description": "Anomaly detection and volatility regime classification using z-score, EWMA, GARCH, and isolation forest models",
+    },
 ]
 
 # Create FastAPI application

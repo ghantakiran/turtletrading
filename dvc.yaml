@@ -1,0 +1,160 @@
+# DVC Pipeline Configuration for TurtleTrading Research
+# This file defines the data processing and model training pipelines
+
+stages:
+  # Data collection and preparation
+  data_collection:
+    cmd: >-
+      python3 backend/app/research/pipelines/data_collection.py
+      --symbols AAPL,MSFT
+      --start-date 2024-01-01
+      --end-date 2024-01-31
+      --output data/raw/stock_data.parquet
+    deps:
+    - backend/app/research/pipelines/data_collection.py
+    - backend/app/research/data_pipeline/data_loader.py
+    outs:
+    - data/raw/stock_data.parquet
+    - data/raw/market_data.parquet
+    - data/raw/sentiment_data.parquet
+    params:
+    - data_collection.symbols
+    - data_collection.start_date
+    - data_collection.end_date
+    metrics:
+    - metrics/data_collection.json
+
+  # Data validation and quality checks
+  data_validation:
+    cmd: >-
+      python -m backend.app.research.pipelines.data_validation
+      --input data/raw/stock_data.parquet
+      --validation-report data/interim/validation_report.json
+    deps:
+    - data/raw/stock_data.parquet
+    - backend/app/research/pipelines/data_validation.py
+    - backend/app/research/data_pipeline/data_validator.py
+    outs:
+    - data/interim/validation_report.json
+    metrics:
+    - metrics/data_validation.json
+
+  # Feature engineering
+  feature_engineering:
+    cmd: >-
+      python -m backend.app.research.pipelines.feature_engineering
+      --input data/raw/stock_data.parquet
+      --sentiment-data data/raw/sentiment_data.parquet
+      --market-data data/raw/market_data.parquet
+      --output data/processed/features.parquet
+    deps:
+    - data/raw/stock_data.parquet
+    - data/raw/sentiment_data.parquet
+    - data/raw/market_data.parquet
+    - backend/app/research/pipelines/feature_engineering.py
+    - backend/app/research/data_pipeline/feature_pipeline.py
+    - backend/app/research/feature_builders/
+    outs:
+    - data/processed/features.parquet
+    - data/processed/feature_names.json
+    params:
+    - feature_engineering.include_features
+    - feature_engineering.technical_indicators
+    - feature_engineering.price_features
+    - feature_engineering.sentiment_features
+    - feature_engineering.market_features
+    metrics:
+    - metrics/feature_engineering.json
+
+  # Data splitting for training/validation/test
+  data_splitting:
+    cmd: >-
+      python -m backend.app.research.pipelines.data_splitting
+      --input data/processed/features.parquet
+      --train-ratio 0.7
+      --val-ratio 0.15
+      --test-ratio 0.15
+      --output-dir data/processed/splits/
+    deps:
+    - data/processed/features.parquet
+    - backend/app/research/pipelines/data_splitting.py
+    outs:
+    - data/processed/splits/train.parquet
+    - data/processed/splits/val.parquet
+    - data/processed/splits/test.parquet
+    - data/processed/splits/split_info.json
+    params:
+    - data_splitting.train_ratio
+    - data_splitting.val_ratio
+    - data_splitting.test_ratio
+    - data_splitting.random_seed
+    metrics:
+    - metrics/data_splitting.json
+
+  # Model training - LSTM
+  lstm_training:
+    cmd: >-
+      python -m backend.app.research.pipelines.lstm_training
+      --train-data data/processed/splits/train.parquet
+      --val-data data/processed/splits/val.parquet
+      --model-output models/trained/lstm_model
+      --config-file backend/app/research/configs/lstm_config.yaml
+    deps:
+    - data/processed/splits/train.parquet
+    - data/processed/splits/val.parquet
+    - backend/app/research/pipelines/lstm_training.py
+    - backend/app/research/model_training/lstm_trainer.py
+    - backend/app/research/configs/lstm_config.yaml
+    outs:
+    - models/trained/lstm_model/
+    params:
+    - lstm_training.epochs
+    - lstm_training.batch_size
+    - lstm_training.learning_rate
+    - lstm_training.lstm_units
+    - lstm_training.dropout_rate
+    - lstm_training.sequence_length
+    metrics:
+    - metrics/lstm_training.json
+    plots:
+    - plots/lstm_training_curves.json
+    - plots/lstm_validation_curves.json
+
+  # Model evaluation
+  model_evaluation:
+    cmd: >-
+      python -m backend.app.research.pipelines.model_evaluation
+      --model models/trained/lstm_model/
+      --test-data data/processed/splits/test.parquet
+      --predictions-output data/processed/predictions.parquet
+      --evaluation-report models/evaluation/lstm_model_evaluation.json
+    deps:
+    - models/trained/lstm_model/
+    - data/processed/splits/test.parquet
+    - backend/app/research/pipelines/model_evaluation.py
+    outs:
+    - data/processed/predictions.parquet
+    - models/evaluation/lstm_model_evaluation.json
+    metrics:
+    - metrics/model_evaluation.json
+    plots:
+    - plots/prediction_accuracy.json
+    - plots/confusion_matrix.json
+    - plots/feature_importance.json
+
+  # Model registry and artifacts
+  model_registry:
+    cmd: >-
+      python -m backend.app.research.pipelines.model_registry
+      --model models/trained/lstm_model/
+      --evaluation models/evaluation/lstm_model_evaluation.json
+      --registry models/registry/
+    deps:
+    - models/trained/lstm_model/
+    - models/evaluation/lstm_model_evaluation.json
+    - backend/app/research/pipelines/model_registry.py
+    outs:
+    - models/registry/lstm_model_v1/
+    - models/registry/model_catalog.json
+    metrics:
+    - metrics/model_registry.json

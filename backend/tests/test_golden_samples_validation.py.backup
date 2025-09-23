@@ -1,0 +1,559 @@
+"""
+Golden Sample Validation Tests
+
+This module runs the complete sentiment analysis pipeline against golden labeled
+samples to validate accuracy and performance metrics.
+"""
+
+import pytest
+import asyncio
+from unittest.mock import Mock, AsyncMock, patch
+from typing import Dict, List, Any, Tuple
+import json
+from statistics import mean
+from dataclasses import asdict
+
+from app.models.sentiment_ingestion_models import RawContentItem
+from app.services.nlp_pipeline import NLPPipeline
+from tests.golden_samples.sentiment_test_data import (
+    ALL_GOLDEN_SAMPLES,
+    GoldenSample,
+    TestDataCategory,
+    get_samples_by_category,
+    get_samples_by_difficulty,
+    get_test_statistics
+)
+
+
+class GoldenSampleValidator:
+    """Validates NLP pipeline performance against golden samples"""
+
+    def __init__(self, nlp_pipeline: NLPPipeline):
+        self.nlp_pipeline = nlp_pipeline
+        self.results = []
+
+    async def validate_sample(self, sample: GoldenSample) -> Dict[str, Any]:
+        """Validate a single golden sample"""
+        # Convert golden sample to RawContentItem
+        content_item = RawContentItem(
+            source=sample.source,
+            content_type=sample.content_type,
+            title=sample.title,
+            content=sample.content,
+            published_at=sample.created_at,
+            source_url=f"https://test.example.com/{sample.id}",
+            source_id=sample.id
+        )
+
+        # Process through NLP pipeline
+        result = await self.nlp_pipeline.process_content(content_item)
+
+        # Validate results
+        validation_result = {
+            'sample_id': sample.id,
+            'category': sample.category.value,
+            'difficulty': sample.difficulty_level,
+            'sentiment_validation': self._validate_sentiment(result, sample),
+            'entity_validation': self._validate_entities(result, sample),
+            'ticker_validation': self._validate_ticker_mappings(result, sample),
+            'overall_score': 0.0,
+            'processing_time_ms': result['processing_metadata'].get('processing_time_ms', 0),
+            'errors': []
+        }
+
+        # Calculate overall score
+        validation_result['overall_score'] = self._calculate_overall_score(validation_result)
+
+        return validation_result
+
+    def _validate_sentiment(self, result: Dict[str, Any], sample: GoldenSample) -> Dict[str, Any]:
+        """Validate sentiment analysis results"""
+        sentiment_score = result.get('sentiment_score')
+        if not sentiment_score:
+            return {
+                'passed': False,
+                'error': 'No sentiment score in result',
+                'accuracy': 0.0
+            }
+
+        expected = sample.expected_sentiment
+        actual_polarity = sentiment_score.polarity
+        actual_compound = sentiment_score.compound_score
+        actual_confidence = sentiment_score.confidence_score
+
+        validation = {
+            'passed': True,
+            'polarity_correct': actual_polarity == expected.polarity,
+            'compound_in_range': expected.compound_score_min <= actual_compound <= expected.compound_score_max,
+            'confidence_adequate': actual_confidence >= expected.confidence_min,
+            'actual_polarity': actual_polarity.value,
+            'expected_polarity': expected.polarity.value,
+            'actual_compound': actual_compound,
+            'expected_compound_range': [expected.compound_score_min, expected.compound_score_max],
+            'actual_confidence': actual_confidence,
+            'expected_confidence_min': expected.confidence_min,
+            'accuracy': 0.0
+        }
+
+        # Calculate accuracy score
+        accuracy_factors = []
+
+        if validation['polarity_correct']:
+            accuracy_factors.append(1.0)
+        else:
+            accuracy_factors.append(0.0)
+
+        if validation['compound_in_range']:
+            accuracy_factors.append(1.0)
+        else:
+            # Partial credit for being close
+            mid_expected = (expected.compound_score_min + expected.compound_score_max) / 2
+            distance = abs(actual_compound - mid_expected)
+            max_distance = max(abs(expected.compound_score_min - mid_expected),
+                             abs(expected.compound_score_max - mid_expected))
+            closeness = max(0, 1 - (distance / max_distance))
+            accuracy_factors.append(closeness * 0.5)  # Partial credit
+
+        if validation['confidence_adequate']:
+            accuracy_factors.append(1.0)
+        else:
+            # Partial credit for confidence
+            confidence_ratio = actual_confidence / expected.confidence_min
+            accuracy_factors.append(min(confidence_ratio, 1.0) * 0.5)
+
+        validation['accuracy'] = mean(accuracy_factors)
+        validation['passed'] = validation['polarity_correct'] and validation['confidence_adequate']
+
+        return validation
+
+    def _validate_entities(self, result: Dict[str, Any], sample: GoldenSample) -> Dict[str, Any]:
+        """Validate entity extraction results"""
+        extracted_entities = result.get('entities', [])
+        expected_entities = sample.expected_entities
+
+        if not expected_entities:
+            return {'passed': True, 'accuracy': 1.0, 'found_entities': len(extracted_entities)}
+
+        validation = {
+            'passed': True,
+            'found_entities': len(extracted_entities),
+            'expected_entities': len(expected_entities),
+            'matches': [],
+            'missed_entities': [],
+            'precision': 0.0,
+            'recall': 0.0,
+            'f1_score': 0.0,
+            'accuracy': 0.0
+        }
+
+        # Find matches
+        for expected in expected_entities:
+            best_match = None
+            best_score = 0.0
+
+            for extracted in extracted_entities:
+                score = self._calculate_entity_match_score(extracted, expected)
+                if score > best_score and score >= 0.7:  # Minimum match threshold
+                    best_match = extracted
+                    best_score = score
+
+            if best_match:
+                validation['matches'].append({
+                    'expected': expected.text,
+                    'extracted': best_match.entity_text,
+                    'score': best_score,
+                    'type_match': best_match.entity_type == expected.entity_type
+                })
+            else:
+                validation['missed_entities'].append(expected.text)
+
+        # Calculate metrics
+        true_positives = len(validation['matches'])
+        false_negatives = len(validation['missed_entities'])
+        false_positives = max(0, len(extracted_entities) - true_positives)
+
+        if true_positives + false_positives > 0:
+            validation['precision'] = true_positives / (true_positives + false_positives)
+        else:
+            validation['precision'] = 1.0 if true_positives == 0 and false_positives == 0 else 0.0
+
+        if true_positives + false_negatives > 0:
+            validation['recall'] = true_positives / (true_positives + false_negatives)
+        else:
+            validation['recall'] = 1.0
+
+        if validation['precision'] + validation['recall'] > 0:
+            validation['f1_score'] = 2 * (validation['precision'] * validation['recall']) / (validation['precision'] + validation['recall'])
+        else:
+            validation['f1_score'] = 0.0
+
+        validation['accuracy'] = validation['f1_score']
+        validation['passed'] = validation['recall'] >= 0.7  # At least 70% recall
+
+        return validation
+
+    def _calculate_entity_match_score(self, extracted, expected) -> float:
+        """Calculate similarity score between extracted and expected entity"""
+        # Exact text match
+        if extracted.entity_text.lower() == expected.text.lower():
+            return 1.0
+
+        # Type mismatch penalty
+        if extracted.entity_type != expected.entity_type:
+            return 0.0
+
+        # Fuzzy text matching
+        extracted_text = extracted.entity_text.lower().strip()
+        expected_text = expected.text.lower().strip()
+
+        # Check if one contains the other
+        if expected_text in extracted_text or extracted_text in expected_text:
+            return 0.8
+
+        # Basic similarity (could use more sophisticated algorithms)
+        common_words = set(extracted_text.split()) & set(expected_text.split())
+        total_words = set(extracted_text.split()) | set(expected_text.split())
+
+        if total_words:
+            return len(common_words) / len(total_words)
+
+        return 0.0
+
+    def _validate_ticker_mappings(self, result: Dict[str, Any], sample: GoldenSample) -> Dict[str, Any]:
+        """Validate ticker mapping results"""
+        extracted_mappings = result.get('ticker_mappings', [])
+        expected_mappings = sample.expected_ticker_mappings
+
+        if not expected_mappings:
+            return {'passed': True, 'accuracy': 1.0, 'found_mappings': len(extracted_mappings)}
+
+        validation = {
+            'passed': True,
+            'found_mappings': len(extracted_mappings),
+            'expected_mappings': len(expected_mappings),
+            'correct_mappings': [],
+            'missed_mappings': [],
+            'incorrect_mappings': [],
+            'accuracy': 0.0
+        }
+
+        # Check each expected mapping
+        for expected in expected_mappings:
+            found_mapping = None
+
+            for extracted in extracted_mappings:
+                if (extracted.ticker_symbol == expected.ticker_symbol and
+                    self._entity_text_matches(extracted.entity_text, expected.entity_text)):
+                    found_mapping = extracted
+                    break
+
+            if found_mapping:
+                validation['correct_mappings'].append({
+                    'entity_text': expected.entity_text,
+                    'ticker_symbol': expected.ticker_symbol,
+                    'confidence': found_mapping.confidence_score
+                })
+            else:
+                validation['missed_mappings'].append({
+                    'entity_text': expected.entity_text,
+                    'ticker_symbol': expected.ticker_symbol
+                })
+
+        # Check for incorrect mappings
+        for extracted in extracted_mappings:
+            is_expected = any(
+                extracted.ticker_symbol == expected.ticker_symbol and
+                self._entity_text_matches(extracted.entity_text, expected.entity_text)
+                for expected in expected_mappings
+            )
+
+            if not is_expected:
+                validation['incorrect_mappings'].append({
+                    'entity_text': extracted.entity_text,
+                    'ticker_symbol': extracted.ticker_symbol
+                })
+
+        # Calculate accuracy
+        correct_count = len(validation['correct_mappings'])
+        total_expected = len(expected_mappings)
+
+        if total_expected > 0:
+            validation['accuracy'] = correct_count / total_expected
+        else:
+            validation['accuracy'] = 1.0
+
+        validation['passed'] = validation['accuracy'] >= 0.8  # 80% accuracy threshold
+
+        return validation
+
+    def _entity_text_matches(self, extracted_text: str, expected_text: str) -> bool:
+        """Check if entity texts match (with some flexibility)"""
+        extracted_lower = extracted_text.lower().strip()
+        expected_lower = expected_text.lower().strip()
+
+        return (extracted_lower == expected_lower or
+                extracted_lower in expected_lower or
+                expected_lower in extracted_lower)
+
+    def _calculate_overall_score(self, validation_result: Dict[str, Any]) -> float:
+        """Calculate overall accuracy score for a sample"""
+        sentiment_score = validation_result['sentiment_validation']['accuracy']
+        entity_score = validation_result['entity_validation']['accuracy']
+        ticker_score = validation_result['ticker_validation']['accuracy']
+
+        # Weighted average (sentiment is most important)
+        return (sentiment_score * 0.5 + entity_score * 0.3 + ticker_score * 0.2)
+
+    async def validate_all_samples(self, samples: List[GoldenSample] = None) -> Dict[str, Any]:
+        """Validate all golden samples and return comprehensive results"""
+        if samples is None:
+            samples = ALL_GOLDEN_SAMPLES
+
+        validation_results = []
+
+        for sample in samples:
+            try:
+                result = await self.validate_sample(sample)
+                validation_results.append(result)
+            except Exception as e:
+                validation_results.append({
+                    'sample_id': sample.id,
+                    'category': sample.category.value,
+                    'difficulty': sample.difficulty_level,
+                    'error': str(e),
+                    'overall_score': 0.0
+                })
+
+        # Calculate aggregate metrics
+        return self._calculate_aggregate_metrics(validation_results)
+
+    def _calculate_aggregate_metrics(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Calculate aggregate metrics across all validation results"""
+        if not results:
+            return {'error': 'No results to analyze'}
+
+        successful_results = [r for r in results if 'error' not in r]
+        failed_results = [r for r in results if 'error' in r]
+
+        if not successful_results:
+            return {'error': 'All validations failed'}
+
+        aggregate = {
+            'total_samples': len(results),
+            'successful_validations': len(successful_results),
+            'failed_validations': len(failed_results),
+            'overall_accuracy': mean([r['overall_score'] for r in successful_results]),
+            'sentiment_accuracy': mean([r['sentiment_validation']['accuracy'] for r in successful_results]),
+            'entity_accuracy': mean([r['entity_validation']['accuracy'] for r in successful_results]),
+            'ticker_accuracy': mean([r['ticker_validation']['accuracy'] for r in successful_results]),
+            'by_category': {},
+            'by_difficulty': {},
+            'processing_time_stats': {
+                'mean': mean([r['processing_time_ms'] for r in successful_results]),
+                'min': min([r['processing_time_ms'] for r in successful_results]),
+                'max': max([r['processing_time_ms'] for r in successful_results])
+            },
+            'detailed_results': results
+        }
+
+        # Aggregate by category
+        for category in TestDataCategory:
+            category_results = [r for r in successful_results if r['category'] == category.value]
+            if category_results:
+                aggregate['by_category'][category.value] = {
+                    'count': len(category_results),
+                    'accuracy': mean([r['overall_score'] for r in category_results])
+                }
+
+        # Aggregate by difficulty
+        for difficulty in ['easy', 'medium', 'hard', 'expert']:
+            difficulty_results = [r for r in successful_results if r['difficulty'] == difficulty]
+            if difficulty_results:
+                aggregate['by_difficulty'][difficulty] = {
+                    'count': len(difficulty_results),
+                    'accuracy': mean([r['overall_score'] for r in difficulty_results])
+                }
+
+        return aggregate
+
+
+# Test cases using golden samples
+class TestGoldenSampleValidation:
+    """Test suite for golden sample validation"""
+
+    @pytest.fixture
+    def redis_service_mock(self):
+        """Mock Redis service"""
+        mock_redis = AsyncMock()
+        mock_redis.get_redis.return_value.__aenter__.return_value = AsyncMock()
+        return mock_redis
+
+    @pytest.fixture
+    def nlp_pipeline(self, redis_service_mock):
+        """Create NLP pipeline with mocked dependencies"""
+        pipeline = NLPPipeline(redis_service_mock)
+
+        # Mock ticker validation and company names
+        with patch.object(pipeline.ticker_mapper, '_validate_ticker', return_value=True):
+            with patch.object(pipeline.ticker_mapper, '_get_company_name') as mock_company:
+                mock_company.side_effect = lambda ticker: {
+                    'AAPL': 'Apple Inc.',
+                    'TSLA': 'Tesla, Inc.',
+                    'MSFT': 'Microsoft Corporation',
+                    'GOOGL': 'Alphabet Inc.',
+                    'NOW': 'ServiceNow Inc.'
+                }.get(ticker, 'Unknown Company')
+
+                yield pipeline
+
+    @pytest.fixture
+    def validator(self, nlp_pipeline):
+        """Create golden sample validator"""
+        return GoldenSampleValidator(nlp_pipeline)
+
+    @pytest.mark.asyncio
+    async def test_basic_sentiment_samples(self, validator):
+        """Test basic sentiment analysis samples"""
+        basic_samples = get_samples_by_category(TestDataCategory.BASIC_SENTIMENT)
+        results = await validator.validate_all_samples(basic_samples)
+
+        # Should achieve good accuracy on basic samples
+        assert results['overall_accuracy'] >= 0.7
+        assert results['sentiment_accuracy'] >= 0.8
+        assert results['successful_validations'] > 0
+
+    @pytest.mark.asyncio
+    async def test_financial_context_samples(self, validator):
+        """Test financial context sentiment samples"""
+        financial_samples = get_samples_by_category(TestDataCategory.FINANCIAL_CONTEXT)
+        results = await validator.validate_all_samples(financial_samples)
+
+        # Financial context should still have good accuracy
+        assert results['overall_accuracy'] >= 0.6
+        assert results['sentiment_accuracy'] >= 0.7
+
+    @pytest.mark.asyncio
+    async def test_entity_extraction_samples(self, validator):
+        """Test entity extraction accuracy"""
+        entity_samples = get_samples_by_category(TestDataCategory.ENTITY_EXTRACTION)
+        results = await validator.validate_all_samples(entity_samples)
+
+        # Entity extraction should be reasonably accurate
+        assert results['entity_accuracy'] >= 0.6
+        assert results['ticker_accuracy'] >= 0.7
+
+    @pytest.mark.asyncio
+    async def test_ticker_mapping_samples(self, validator):
+        """Test ticker mapping accuracy"""
+        ticker_samples = get_samples_by_category(TestDataCategory.TICKER_MAPPING)
+        results = await validator.validate_all_samples(ticker_samples)
+
+        # Ticker mapping should have high accuracy
+        assert results['ticker_accuracy'] >= 0.8
+
+    @pytest.mark.asyncio
+    async def test_edge_cases_samples(self, validator):
+        """Test edge cases and difficult samples"""
+        edge_samples = get_samples_by_category(TestDataCategory.EDGE_CASES)
+        results = await validator.validate_all_samples(edge_samples)
+
+        # Edge cases may have lower accuracy but should not fail completely
+        assert results['overall_accuracy'] >= 0.4
+        assert results['successful_validations'] == len(edge_samples)
+
+    @pytest.mark.asyncio
+    async def test_difficulty_progression(self, validator):
+        """Test that accuracy decreases with difficulty"""
+        easy_samples = get_samples_by_difficulty('easy')
+        medium_samples = get_samples_by_difficulty('medium')
+        hard_samples = get_samples_by_difficulty('hard')
+
+        easy_results = await validator.validate_all_samples(easy_samples)
+        medium_results = await validator.validate_all_samples(medium_samples)
+        hard_results = await validator.validate_all_samples(hard_samples)
+
+        # Accuracy should generally decrease with difficulty
+        if easy_results.get('overall_accuracy') and medium_results.get('overall_accuracy'):
+            assert easy_results['overall_accuracy'] >= medium_results['overall_accuracy'] - 0.1
+
+        if medium_results.get('overall_accuracy') and hard_results.get('overall_accuracy'):
+            assert medium_results['overall_accuracy'] >= hard_results['overall_accuracy'] - 0.1
+
+    @pytest.mark.asyncio
+    async def test_performance_benchmarks(self, validator):
+        """Test performance benchmarks"""
+        all_results = await validator.validate_all_samples()
+
+        # Performance requirements
+        assert all_results['processing_time_stats']['mean'] < 1000  # Average under 1 second
+        assert all_results['processing_time_stats']['max'] < 5000   # Max under 5 seconds
+
+    @pytest.mark.asyncio
+    async def test_individual_sample_validation(self, validator):
+        """Test validation of individual high-value samples"""
+        # Test specific important samples
+        important_sample_ids = ['basic_pos_001', 'fin_bull_001', 'ent_complex_001']
+
+        for sample_id in important_sample_ids:
+            sample = next((s for s in ALL_GOLDEN_SAMPLES if s.id == sample_id), None)
+            if sample:
+                result = await validator.validate_sample(sample)
+
+                # These important samples should pass
+                assert result['overall_score'] >= 0.6
+                assert 'error' not in result
+
+    def test_golden_sample_coverage(self):
+        """Test that golden samples provide good coverage"""
+        stats = get_test_statistics()
+
+        # Should have samples across all major categories
+        assert len(stats['by_category']) >= 4
+        assert len(stats['by_difficulty']) >= 3
+        assert len(stats['by_polarity']) >= 3
+
+        # Should cover major entity types
+        assert 'company' in stats['entity_types']
+        assert 'ticker' in stats['entity_types']
+        assert 'person' in stats['entity_types']
+
+        # Should cover major ticker symbols
+        major_tickers = {'AAPL', 'TSLA', 'MSFT', 'GOOGL'}
+        found_tickers = set(stats['ticker_symbols'])
+        assert len(major_tickers.intersection(found_tickers)) >= 3
+
+
+if __name__ == "__main__":
+    # Run validation on all golden samples
+    async def main():
+        from app.services.redis_service import RedisService
+        import os
+
+        # Mock Redis for standalone testing
+        redis_mock = AsyncMock()
+        redis_mock.get_redis.return_value.__aenter__.return_value = AsyncMock()
+
+        pipeline = NLPPipeline(redis_mock)
+        validator = GoldenSampleValidator(pipeline)
+
+        print("Running golden sample validation...")
+        results = await validator.validate_all_samples()
+
+        print(f"\nValidation Results:")
+        print(f"Total samples: {results['total_samples']}")
+        print(f"Successful validations: {results['successful_validations']}")
+        print(f"Failed validations: {results['failed_validations']}")
+        print(f"Overall accuracy: {results['overall_accuracy']:.3f}")
+        print(f"Sentiment accuracy: {results['sentiment_accuracy']:.3f}")
+        print(f"Entity accuracy: {results['entity_accuracy']:.3f}")
+        print(f"Ticker accuracy: {results['ticker_accuracy']:.3f}")
+
+        print(f"\nAccuracy by category:")
+        for category, stats in results['by_category'].items():
+            print(f"  {category}: {stats['accuracy']:.3f} ({stats['count']} samples)")
+
+        print(f"\nAccuracy by difficulty:")
+        for difficulty, stats in results['by_difficulty'].items():
+            print(f"  {difficulty}: {stats['accuracy']:.3f} ({stats['count']} samples)")
+
+    asyncio.run(main())

@@ -1,0 +1,257 @@
+# DVC Parameters for TurtleTrading Research Pipelines
+# This file contains all configurable parameters for reproducible experiments
+
+# Data Collection Parameters
+data_collection:
+  symbols:
+    - AAPL
+    - MSFT
+    - GOOGL
+    - AMZN
+    - TSLA
+    - SPY
+    - QQQ
+    - IWM
+    - VIX
+    - XLK  # Technology
+    - XLV  # Healthcare
+    - XLF  # Financials
+    - XLE  # Energy
+    - XLU  # Utilities
+  start_date: "2020-01-01"
+  end_date: "2024-12-31"
+  data_sources:
+    primary: "yfinance"
+    fallback: "alpha_vantage"
+  cache_enabled: true
+  cache_ttl_hours: 24
+
+# Data Validation Parameters
+data_validation:
+  required_columns:
+    - open
+    - high
+    - low
+    - close
+    - volume
+  outlier_threshold: 5.0
+  max_missing_ratio: 0.05
+  business_rules_validation: true
+  temporal_consistency_check: true
+
+# Feature Engineering Parameters
+feature_engineering:
+  include_features:
+    - technical
+    - price
+    - sentiment
+    - market
+
+  technical_indicators:
+    rsi_period: 14
+    macd_fast: 12
+    macd_slow: 26
+    macd_signal: 9
+    bb_period: 20
+    bb_std: 2.0
+    ema_periods: [12, 26, 50]
+    sma_periods: [20, 50, 200]
+    atr_period: 14
+    adx_period: 14
+    stoch_period: 14
+    obv_ma_period: 20
+
+  price_features:
+    return_periods: [1, 5, 10, 20]
+    volatility_periods: [5, 10, 20, 60]
+    rolling_periods: [20, 60, 252]
+    quantile_periods: 252
+    outlier_threshold: 3.0
+
+  sentiment_features:
+    rolling_periods: [5, 10, 20]
+    sentiment_threshold: 0.1
+    volume_threshold: 1.5
+    decay_factor: 0.95
+
+  market_features:
+    index_symbols: ["SPY", "QQQ", "IWM", "VIX"]
+    correlation_periods: [20, 60, 252]
+    beta_periods: [60, 252]
+    sector_symbols:
+      technology: ["XLK", "TECH"]
+      healthcare: ["XLV", "HEALTH"]
+      financials: ["XLF", "FINANCE"]
+      energy: ["XLE", "ENERGY"]
+      utilities: ["XLU", "UTILITIES"]
+
+  pipeline_config:
+    validate_input: true
+    validate_output: true
+    handle_missing: "forward_fill"
+    feature_selection: true
+    correlation_threshold: 0.95
+    variance_threshold: 0.01
+
+# Data Splitting Parameters
+data_splitting:
+  train_ratio: 0.7
+  val_ratio: 0.15
+  test_ratio: 0.15
+  random_seed: 42
+  stratify_by_period: true
+  temporal_split: true  # Time-based split instead of random
+  lookback_days: 90    # Minimum lookback for features
+
+# LSTM Model Training Parameters
+lstm_training:
+  # Model Architecture
+  lstm_units: [128, 64, 32]
+  dropout_rate: 0.2
+  recurrent_dropout: 0.1
+  sequence_length: 60
+  prediction_horizon: [1, 5, 10, 20]  # Days ahead to predict
+
+  # Training Configuration
+  epochs: 100
+  batch_size: 32
+  learning_rate: 0.001
+  patience: 10  # Early stopping patience
+  validation_split: 0.2
+
+  # Optimization
+  optimizer: "adam"
+  loss_function: "mse"
+  metrics: ["mae", "mape"]
+
+  # Regularization
+  l1_reg: 0.0001
+  l2_reg: 0.0001
+  batch_normalization: true
+
+  # Data Processing
+  feature_scaling: "standard"  # standard, minmax, robust
+  target_scaling: "standard"
+
+  # Model Checkpointing
+  save_best_only: true
+  monitor_metric: "val_loss"
+  checkpoint_dir: "models/checkpoints"
+
+  # Random Seeds for Reproducibility
+  random_seed: 42
+  numpy_seed: 42
+  tensorflow_seed: 42
+
+# Model Evaluation Parameters
+model_evaluation:
+  metrics:
+    - mae
+    - mse
+    - rmse
+    - mape
+    - directional_accuracy
+    - sharpe_ratio
+    - max_drawdown
+
+  confidence_intervals: [0.1, 0.25, 0.5, 0.75, 0.9]
+  backtesting_periods: ["1M", "3M", "6M", "1Y"]
+  benchmark_symbols: ["SPY", "QQQ"]
+
+  evaluation_splits:
+    - name: "recent"
+      start_date: "2024-01-01"
+      end_date: "2024-12-31"
+    - name: "bull_market"
+      start_date: "2020-04-01"
+      end_date: "2021-12-31"
+    - name: "bear_market"
+      start_date: "2022-01-01"
+      end_date: "2022-12-31"
+
+# Model Registry Parameters
+model_registry:
+  versioning_strategy: "semantic"  # semantic, timestamp, auto
+  model_metadata:
+    author: "TurtleTrading Research Team"
+    environment: "research"
+    framework: "tensorflow"
+    model_type: "lstm"
+
+  performance_thresholds:
+    min_directional_accuracy: 0.55
+    max_mape: 0.15
+    min_sharpe_ratio: 0.5
+
+  artifacts_to_save:
+    - model_weights
+    - model_architecture
+    - training_history
+    - evaluation_metrics
+    - feature_importance
+    - preprocessing_params
+    - prediction_samples
+
+# Experiment Tracking Parameters
+experiment_tracking:
+  mlflow:
+    enabled: true
+    experiment_name: "turtle_trading_lstm"
+    tracking_uri: "file:./mlruns"
+    artifact_location: "file:./mlartifacts"
+
+  tags:
+    team: "research"
+    project: "turtle_trading"
+    model_family: "lstm"
+    data_version: "v1"
+
+# Reproducibility Parameters
+reproducibility:
+  global_random_seed: 42
+  deterministic_training: true
+  environment_lockfile: "requirements-lock.txt"
+  git_commit_tracking: true
+
+  data_versioning:
+    enabled: true
+    hash_algorithm: "md5"
+    chunk_size: "1MB"
+
+  model_versioning:
+    enabled: true
+    auto_increment: true
+    metadata_tracking: true
+
+# Resource Management Parameters
+resource_management:
+  max_memory_gb: 8
+  max_cpu_cores: 4
+  gpu_memory_fraction: 0.8
+
+  parallel_processing:
+    feature_engineering: 2
+    data_loading: 2
+    model_training: 1  # Single GPU/CPU for training
+
+  caching:
+    feature_cache_size_gb: 2
+    model_cache_size_gb: 1
+    data_cache_ttl_hours: 24
+
+# Monitoring and Alerting Parameters
+monitoring:
+  data_drift_detection:
+    enabled: true
+    reference_period: "1M"
+    drift_threshold: 0.1
+
+  model_performance_monitoring:
+    enabled: true
+    performance_window: "1W"
+    alert_threshold: 0.05  # 5% performance drop
+
+  pipeline_monitoring:
+    enabled: true
+    max_execution_time_minutes: 120
+    failure_alert_enabled: true

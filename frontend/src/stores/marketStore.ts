@@ -105,6 +105,9 @@ export interface MarketState {
   // Alert actions
   createAlert: (alert: Omit<Alert, 'id' | 'createdAt'>) => void;
   deleteAlert: (id: string) => void;
+  addAlert: (alert: any) => void;
+  removeAlert: (alertId: string) => void;
+  acknowledgeAlert: (alertId: string) => void;
   
   // Data fetching
   fetchStockData: (symbol: string) => Promise<void>;
@@ -124,7 +127,7 @@ export interface MarketState {
 export interface Alert {
   id: string;
   symbol: string;
-  type: 'price_above' | 'price_below' | 'volume_spike' | 'rsi_overbought' | 'rsi_oversold';
+  type: 'price_above' | 'price_below' | 'volume_spike' | 'rsi_overbought' | 'rsi_oversold' | 'regime_change' | 'anomaly' | 'volatility_spike';
   condition: number;
   isActive: boolean;
   createdAt: string;
@@ -275,6 +278,28 @@ const useMarketStore = create<MarketState>()(
     deleteAlert: (id: string) => {
       set((state) => ({
         alerts: state.alerts.filter(a => a.id !== id)
+      }));
+    },
+
+    addAlert: (alert: any) => {
+      set((state) => ({
+        alerts: [...state.alerts, alert]
+      }));
+    },
+
+    removeAlert: (alertId: string) => {
+      set((state) => ({
+        alerts: state.alerts.filter(a => a.id !== alertId)
+      }));
+    },
+
+    acknowledgeAlert: (alertId: string) => {
+      set((state) => ({
+        alerts: state.alerts.map(alert =>
+          alert.id === alertId
+            ? { ...alert, acknowledged: true }
+            : alert
+        )
       }));
     },
 

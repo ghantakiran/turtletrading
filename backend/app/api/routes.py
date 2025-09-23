@@ -4,7 +4,7 @@ Main API router that includes all endpoint modules
 
 from fastapi import APIRouter
 from app.api.endpoints import stocks, market, sentiment, auth, websocket_info
-from app.api.v1 import options, backtest, scanners
+from app.api.v1 import options, backtest, scanners, regimes
 
 api_router = APIRouter()
 
@@ -54,4 +54,9 @@ api_router.include_router(
 api_router.include_router(
     scanners.router,
     tags=["scanners"]
+)
+
+api_router.include_router(
+    regimes.router,
+    tags=["regimes"]
 )

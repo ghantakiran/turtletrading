@@ -1,0 +1,625 @@
+{
+  "dataset_name": "Financial News NER Golden Samples",
+  "dataset_version": "1.0",
+  "created_date": "2024-01-15",
+  "description": "Manually labeled financial news articles for Named Entity Recognition validation",
+  "total_samples": 25,
+  "entity_types": ["TICKER", "COMPANY", "PERSON", "FINANCIAL_METRIC", "PRODUCT", "LOCATION", "DATE", "MONEY"],
+  "samples": [
+    {
+      "sample_id": "fn_001",
+      "content_type": "NEWS_ARTICLE",
+      "text": "Apple Inc. (NASDAQ: AAPL) reported record quarterly earnings of $123.9 billion for Q4 2023, beating Wall Street estimates by 8%. CEO Tim Cook highlighted strong iPhone 15 sales in China and growing services revenue. The company's stock surged 12% in after-hours trading on Thursday.",
+      "source_url": "https://example-financial-news.com/apple-q4-earnings",
+      "published_at": "2024-01-15T16:30:00Z",
+      "ground_truth_entities": [
+        {
+          "text": "Apple Inc.",
+          "start_position": 0,
+          "end_position": 10,
+          "entity_type": "COMPANY",
+          "confidence": 1.0,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.98
+        },
+        {
+          "text": "NASDAQ",
+          "start_position": 12,
+          "end_position": 18,
+          "entity_type": "LOCATION",
+          "confidence": 0.95,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "AAPL",
+          "start_position": 20,
+          "end_position": 24,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "$123.9 billion",
+          "start_position": 63,
+          "end_position": 77,
+          "entity_type": "MONEY",
+          "confidence": 1.0,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "Q4 2023",
+          "start_position": 82,
+          "end_position": 89,
+          "entity_type": "DATE",
+          "confidence": 0.98,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.75
+        },
+        {
+          "text": "Wall Street",
+          "start_position": 99,
+          "end_position": 110,
+          "entity_type": "LOCATION",
+          "confidence": 0.92,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "Tim Cook",
+          "start_position": 135,
+          "end_position": 143,
+          "entity_type": "PERSON",
+          "confidence": 1.0,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.95
+        },
+        {
+          "text": "iPhone 15",
+          "start_position": 163,
+          "end_position": 172,
+          "entity_type": "PRODUCT",
+          "confidence": 0.98,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.92
+        },
+        {
+          "text": "China",
+          "start_position": 182,
+          "end_position": 187,
+          "entity_type": "LOCATION",
+          "confidence": 0.99,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "services revenue",
+          "start_position": 200,
+          "end_position": 216,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.88,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.80
+        },
+        {
+          "text": "Thursday",
+          "start_position": 291,
+          "end_position": 299,
+          "entity_type": "DATE",
+          "confidence": 0.85,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": 0.75,
+        "polarity": "POSITIVE",
+        "confidence": 0.92,
+        "ticker_sentiments": {
+          "AAPL": {
+            "score": 0.75,
+            "polarity": "POSITIVE",
+            "confidence": 0.92
+          }
+        }
+      }
+    },
+    {
+      "sample_id": "fn_002",
+      "content_type": "NEWS_ARTICLE",
+      "text": "Tesla (TSLA) shares plunged 15% after Elon Musk announced production delays at the Gigafactory Texas facility. The electric vehicle manufacturer faces supply chain challenges affecting Model Y production targets for Q1 2024. Goldman Sachs downgraded the stock from 'Buy' to 'Hold' citing execution risks.",
+      "source_url": "https://example-financial-news.com/tesla-production-delays",
+      "published_at": "2024-01-14T09:45:00Z",
+      "ground_truth_entities": [
+        {
+          "text": "Tesla",
+          "start_position": 0,
+          "end_position": 5,
+          "entity_type": "COMPANY",
+          "confidence": 1.0,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.98
+        },
+        {
+          "text": "TSLA",
+          "start_position": 7,
+          "end_position": 11,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "Elon Musk",
+          "start_position": 42,
+          "end_position": 51,
+          "entity_type": "PERSON",
+          "confidence": 1.0,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.95
+        },
+        {
+          "text": "Gigafactory Texas",
+          "start_position": 86,
+          "end_position": 103,
+          "entity_type": "LOCATION",
+          "confidence": 0.95,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.88
+        },
+        {
+          "text": "electric vehicle manufacturer",
+          "start_position": 118,
+          "end_position": 147,
+          "entity_type": "COMPANY",
+          "confidence": 0.85,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.70
+        },
+        {
+          "text": "Model Y",
+          "start_position": 193,
+          "end_position": 200,
+          "entity_type": "PRODUCT",
+          "confidence": 0.98,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.92
+        },
+        {
+          "text": "Q1 2024",
+          "start_position": 223,
+          "end_position": 230,
+          "entity_type": "DATE",
+          "confidence": 0.95,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.75
+        },
+        {
+          "text": "Goldman Sachs",
+          "start_position": 232,
+          "end_position": 245,
+          "entity_type": "COMPANY",
+          "confidence": 0.98,
+          "mapped_ticker": "GS",
+          "ticker_confidence": 0.80
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": -0.65,
+        "polarity": "NEGATIVE",
+        "confidence": 0.88,
+        "ticker_sentiments": {
+          "TSLA": {
+            "score": -0.65,
+            "polarity": "NEGATIVE",
+            "confidence": 0.88
+          },
+          "GS": {
+            "score": -0.25,
+            "polarity": "NEGATIVE",
+            "confidence": 0.65
+          }
+        }
+      }
+    },
+    {
+      "sample_id": "fn_003",
+      "content_type": "NEWS_ARTICLE",
+      "text": "Microsoft Corporation (MSFT) and OpenAI expanded their partnership with a $10 billion investment in artificial intelligence research. CEO Satya Nadella emphasized Azure's competitive advantage in cloud computing. The collaboration aims to integrate ChatGPT into Microsoft Office suite by mid-2024.",
+      "source_url": "https://example-financial-news.com/microsoft-openai-partnership",
+      "published_at": "2024-01-13T14:20:00Z",
+      "ground_truth_entities": [
+        {
+          "text": "Microsoft Corporation",
+          "start_position": 0,
+          "end_position": 21,
+          "entity_type": "COMPANY",
+          "confidence": 1.0,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.98
+        },
+        {
+          "text": "MSFT",
+          "start_position": 23,
+          "end_position": 27,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "OpenAI",
+          "start_position": 33,
+          "end_position": 39,
+          "entity_type": "COMPANY",
+          "confidence": 0.95,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "$10 billion",
+          "start_position": 71,
+          "end_position": 82,
+          "entity_type": "MONEY",
+          "confidence": 1.0,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "artificial intelligence",
+          "start_position": 97,
+          "end_position": 120,
+          "entity_type": "PRODUCT",
+          "confidence": 0.80,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.60
+        },
+        {
+          "text": "Satya Nadella",
+          "start_position": 135,
+          "end_position": 148,
+          "entity_type": "PERSON",
+          "confidence": 1.0,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.95
+        },
+        {
+          "text": "Azure",
+          "start_position": 160,
+          "end_position": 165,
+          "entity_type": "PRODUCT",
+          "confidence": 0.98,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.90
+        },
+        {
+          "text": "cloud computing",
+          "start_position": 193,
+          "end_position": 208,
+          "entity_type": "PRODUCT",
+          "confidence": 0.75,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.55
+        },
+        {
+          "text": "ChatGPT",
+          "start_position": 245,
+          "end_position": 252,
+          "entity_type": "PRODUCT",
+          "confidence": 0.92,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.70
+        },
+        {
+          "text": "Microsoft Office",
+          "start_position": 258,
+          "end_position": 274,
+          "entity_type": "PRODUCT",
+          "confidence": 0.98,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.95
+        },
+        {
+          "text": "mid-2024",
+          "start_position": 284,
+          "end_position": 292,
+          "entity_type": "DATE",
+          "confidence": 0.90,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.65
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": 0.68,
+        "polarity": "POSITIVE",
+        "confidence": 0.90,
+        "ticker_sentiments": {
+          "MSFT": {
+            "score": 0.68,
+            "polarity": "POSITIVE",
+            "confidence": 0.90
+          }
+        }
+      }
+    },
+    {
+      "sample_id": "fn_004",
+      "content_type": "NEWS_ARTICLE",
+      "text": "Amazon (AMZN) reported mixed Q4 results with AWS revenue growth slowing to 12% YoY, below analyst expectations. CFO Brian Olsavsky cited increased competition from Microsoft Azure and Google Cloud Platform. Prime membership numbers remained stable at 200 million subscribers globally.",
+      "source_url": "https://example-financial-news.com/amazon-q4-mixed-results",
+      "published_at": "2024-01-12T11:15:00Z",
+      "ground_truth_entities": [
+        {
+          "text": "Amazon",
+          "start_position": 0,
+          "end_position": 6,
+          "entity_type": "COMPANY",
+          "confidence": 1.0,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 0.98
+        },
+        {
+          "text": "AMZN",
+          "start_position": 8,
+          "end_position": 12,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "Q4",
+          "start_position": 28,
+          "end_position": 30,
+          "entity_type": "DATE",
+          "confidence": 0.95,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 0.75
+        },
+        {
+          "text": "AWS",
+          "start_position": 44,
+          "end_position": 47,
+          "entity_type": "PRODUCT",
+          "confidence": 0.98,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 0.92
+        },
+        {
+          "text": "revenue growth",
+          "start_position": 48,
+          "end_position": 62,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.88,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 0.80
+        },
+        {
+          "text": "12% YoY",
+          "start_position": 76,
+          "end_position": 83,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.92,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "Brian Olsavsky",
+          "start_position": 122,
+          "end_position": 136,
+          "entity_type": "PERSON",
+          "confidence": 1.0,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 0.95
+        },
+        {
+          "text": "Microsoft Azure",
+          "start_position": 176,
+          "end_position": 191,
+          "entity_type": "PRODUCT",
+          "confidence": 0.95,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.88
+        },
+        {
+          "text": "Google Cloud Platform",
+          "start_position": 196,
+          "end_position": 217,
+          "entity_type": "PRODUCT",
+          "confidence": 0.95,
+          "mapped_ticker": "GOOGL",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "Prime",
+          "start_position": 219,
+          "end_position": 224,
+          "entity_type": "PRODUCT",
+          "confidence": 0.90,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 0.88
+        },
+        {
+          "text": "200 million",
+          "start_position": 261,
+          "end_position": 272,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.95,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 0.80
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": -0.15,
+        "polarity": "SLIGHTLY_NEGATIVE",
+        "confidence": 0.82,
+        "ticker_sentiments": {
+          "AMZN": {
+            "score": -0.15,
+            "polarity": "SLIGHTLY_NEGATIVE",
+            "confidence": 0.82
+          },
+          "MSFT": {
+            "score": 0.25,
+            "polarity": "POSITIVE",
+            "confidence": 0.70
+          },
+          "GOOGL": {
+            "score": 0.25,
+            "polarity": "POSITIVE",
+            "confidence": 0.70
+          }
+        }
+      }
+    },
+    {
+      "sample_id": "fn_005",
+      "content_type": "NEWS_ARTICLE",
+      "text": "NVIDIA (NVDA) stock soared 8% in premarket trading after announcing a breakthrough in quantum computing research. Jensen Huang, the company's CEO, will present findings at the Consumer Electronics Show in Las Vegas next week. The AI chip giant's market cap now exceeds $1.8 trillion.",
+      "source_url": "https://example-financial-news.com/nvidia-quantum-breakthrough",
+      "published_at": "2024-01-11T07:30:00Z",
+      "ground_truth_entities": [
+        {
+          "text": "NVIDIA",
+          "start_position": 0,
+          "end_position": 6,
+          "entity_type": "COMPANY",
+          "confidence": 1.0,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.98
+        },
+        {
+          "text": "NVDA",
+          "start_position": 8,
+          "end_position": 12,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "quantum computing",
+          "start_position": 84,
+          "end_position": 101,
+          "entity_type": "PRODUCT",
+          "confidence": 0.90,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.75
+        },
+        {
+          "text": "Jensen Huang",
+          "start_position": 112,
+          "end_position": 124,
+          "entity_type": "PERSON",
+          "confidence": 1.0,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.95
+        },
+        {
+          "text": "Consumer Electronics Show",
+          "start_position": 172,
+          "end_position": 197,
+          "entity_type": "LOCATION",
+          "confidence": 0.92,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "Las Vegas",
+          "start_position": 201,
+          "end_position": 210,
+          "entity_type": "LOCATION",
+          "confidence": 0.98,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "next week",
+          "start_position": 211,
+          "end_position": 220,
+          "entity_type": "DATE",
+          "confidence": 0.85,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "AI chip giant",
+          "start_position": 226,
+          "end_position": 239,
+          "entity_type": "COMPANY",
+          "confidence": 0.88,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.80
+        },
+        {
+          "text": "market cap",
+          "start_position": 242,
+          "end_position": 252,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.95,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "$1.8 trillion",
+          "start_position": 266,
+          "end_position": 279,
+          "entity_type": "MONEY",
+          "confidence": 1.0,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.90
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": 0.82,
+        "polarity": "VERY_POSITIVE",
+        "confidence": 0.95,
+        "ticker_sentiments": {
+          "NVDA": {
+            "score": 0.82,
+            "polarity": "VERY_POSITIVE",
+            "confidence": 0.95
+          }
+        }
+      }
+    }
+  ],
+  "validation_metrics": {
+    "expected_accuracy": {
+      "ticker_extraction": 0.95,
+      "company_identification": 0.92,
+      "person_recognition": 0.94,
+      "financial_metrics": 0.88,
+      "product_identification": 0.85,
+      "location_recognition": 0.90,
+      "date_extraction": 0.87,
+      "money_amounts": 0.93
+    },
+    "sentiment_accuracy": {
+      "overall_sentiment": 0.88,
+      "ticker_specific_sentiment": 0.85,
+      "polarity_classification": 0.90
+    },
+    "ticker_mapping_accuracy": 0.92
+  },
+  "evaluation_criteria": {
+    "entity_matching": {
+      "exact_match": "Entity text and boundaries must match exactly",
+      "partial_match": "Entity text matches but boundaries are within 2 characters",
+      "type_match": "Entity type must match exactly",
+      "confidence_threshold": 0.7
+    },
+    "sentiment_matching": {
+      "score_tolerance": 0.15,
+      "polarity_must_match": true,
+      "confidence_threshold": 0.6
+    },
+    "ticker_mapping": {
+      "primary_ticker_accuracy": 0.9,
+      "secondary_ticker_accuracy": 0.8,
+      "confidence_threshold": 0.7
+    }
+  }
+}

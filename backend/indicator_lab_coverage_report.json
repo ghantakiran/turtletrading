@@ -1,0 +1,61 @@
+{
+  "file_existence": {
+    "app/models/ta_lib_indicator_models.py": true,
+    "app/services/indicator_computation_engine.py": true,
+    "app/api/v1/indicator_lab.py": true,
+    "tests/test_indicator_lab.py": true,
+    "tests/test_indicator_lab_integration.py": true,
+    "tests/test_golden_samples_validation.py": true
+  },
+  "lines_of_code": {
+    "app/models/ta_lib_indicator_models.py": 354,
+    "app/services/indicator_computation_engine.py": 805,
+    "app/api/v1/indicator_lab.py": 568
+  },
+  "test_coverage": {
+    "tests/test_indicator_lab.py": 80.0,
+    "tests/test_indicator_lab_integration.py": 80.0,
+    "tests/test_golden_samples_validation.py": 30.0
+  },
+  "golden_samples": {
+    "momentum_scalping": true,
+    "trend_following": true,
+    "mean_reversion": true,
+    "__init__": true
+  },
+  "api_completeness": {
+    "search_indicators": true,
+    "get_indicator_definition": true,
+    "create_graph": true,
+    "get_graph": true,
+    "update_graph": true,
+    "delete_graph": true,
+    "compute_graph": true,
+    "get_computation_result": false,
+    "parameter_sweep": false,
+    "create_preset": true,
+    "get_preset": true,
+    "list_presets": true,
+    "update_preset": false,
+    "delete_preset": false
+  },
+  "data_models": {
+    "IndicatorDefinition": true,
+    "IndicatorParameter": true,
+    "DataConnection": false,
+    "ComputationNode": true,
+    "ComputationGraph": true,
+    "ComputationResult": false,
+    "ParameterSweepConfig": true,
+    "ParameterSweepResult": true,
+    "IndicatorPreset": true
+  },
+  "summary": {
+    "file_completion_percentage": 100.0,
+    "average_test_coverage": 63.333333333333336,
+    "golden_samples_completion": 100.0,
+    "api_completion": 71.42857142857143,
+    "models_completion": 77.77777777777779,
+    "total_lines_of_code": 1727
+  }
+}

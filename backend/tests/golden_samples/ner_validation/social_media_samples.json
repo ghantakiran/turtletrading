@@ -1,0 +1,526 @@
+{
+  "dataset_name": "Social Media NER Golden Samples",
+  "dataset_version": "1.0",
+  "created_date": "2024-01-15",
+  "description": "Manually labeled social media posts for Named Entity Recognition validation",
+  "total_samples": 20,
+  "entity_types": ["TICKER", "COMPANY", "PERSON", "FINANCIAL_METRIC", "PRODUCT", "LOCATION", "DATE", "MONEY"],
+  "samples": [
+    {
+      "sample_id": "sm_001",
+      "content_type": "SOCIAL_MEDIA",
+      "text": "$AAPL to the moon! 🚀 Tim Cook absolutely crushed it with iPhone 15 sales. This earnings beat is MASSIVE. Buying more shares tomorrow! #Apple #AAPL #BullRun",
+      "source_url": "https://twitter.com/trader123/status/1234567890",
+      "published_at": "2024-01-15T20:45:00Z",
+      "platform": "twitter",
+      "ground_truth_entities": [
+        {
+          "text": "$AAPL",
+          "start_position": 0,
+          "end_position": 5,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "Tim Cook",
+          "start_position": 22,
+          "end_position": 30,
+          "entity_type": "PERSON",
+          "confidence": 1.0,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.95
+        },
+        {
+          "text": "iPhone 15",
+          "start_position": 54,
+          "end_position": 63,
+          "entity_type": "PRODUCT",
+          "confidence": 0.98,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.92
+        },
+        {
+          "text": "earnings beat",
+          "start_position": 76,
+          "end_position": 89,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.90,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "tomorrow",
+          "start_position": 124,
+          "end_position": 132,
+          "entity_type": "DATE",
+          "confidence": 0.80,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "#Apple",
+          "start_position": 134,
+          "end_position": 140,
+          "entity_type": "COMPANY",
+          "confidence": 0.88,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "#AAPL",
+          "start_position": 141,
+          "end_position": 146,
+          "entity_type": "TICKER",
+          "confidence": 0.95,
+          "mapped_ticker": "AAPL",
+          "ticker_confidence": 1.0
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": 0.88,
+        "polarity": "VERY_POSITIVE",
+        "confidence": 0.94,
+        "ticker_sentiments": {
+          "AAPL": {
+            "score": 0.88,
+            "polarity": "VERY_POSITIVE",
+            "confidence": 0.94
+          }
+        }
+      }
+    },
+    {
+      "sample_id": "sm_002",
+      "content_type": "SOCIAL_MEDIA",
+      "text": "Bearish on $TSLA right now. Production issues at Giga Berlin are real. Elon needs to focus on execution instead of Twitter drama. Might short at $240. #Tesla #EV #Trading",
+      "source_url": "https://reddit.com/r/wallstreetbets/comments/tsla_bear_case",
+      "published_at": "2024-01-14T15:30:00Z",
+      "platform": "reddit",
+      "ground_truth_entities": [
+        {
+          "text": "$TSLA",
+          "start_position": 11,
+          "end_position": 16,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "Giga Berlin",
+          "start_position": 50,
+          "end_position": 61,
+          "entity_type": "LOCATION",
+          "confidence": 0.95,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.88
+        },
+        {
+          "text": "Elon",
+          "start_position": 72,
+          "end_position": 76,
+          "entity_type": "PERSON",
+          "confidence": 0.95,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.92
+        },
+        {
+          "text": "Twitter",
+          "start_position": 118,
+          "end_position": 125,
+          "entity_type": "COMPANY",
+          "confidence": 0.90,
+          "mapped_ticker": "X",
+          "ticker_confidence": 0.70
+        },
+        {
+          "text": "$240",
+          "start_position": 146,
+          "end_position": 150,
+          "entity_type": "MONEY",
+          "confidence": 0.98,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.90
+        },
+        {
+          "text": "#Tesla",
+          "start_position": 152,
+          "end_position": 158,
+          "entity_type": "COMPANY",
+          "confidence": 0.92,
+          "mapped_ticker": "TSLA",
+          "ticker_confidence": 0.88
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": -0.72,
+        "polarity": "NEGATIVE",
+        "confidence": 0.91,
+        "ticker_sentiments": {
+          "TSLA": {
+            "score": -0.72,
+            "polarity": "NEGATIVE",
+            "confidence": 0.91
+          },
+          "X": {
+            "score": -0.35,
+            "polarity": "NEGATIVE",
+            "confidence": 0.65
+          }
+        }
+      }
+    },
+    {
+      "sample_id": "sm_003",
+      "content_type": "SOCIAL_MEDIA",
+      "text": "Just loaded up on $MSFT calls before earnings! 💰 Satya's Azure strategy is printing money. Cloud revenue up 35% YoY. This is a generational wealth play. Microsoft > Amazon any day! 📈",
+      "source_url": "https://discord.com/channels/investing/msft-calls",
+      "published_at": "2024-01-13T18:15:00Z",
+      "platform": "discord",
+      "ground_truth_entities": [
+        {
+          "text": "$MSFT",
+          "start_position": 19,
+          "end_position": 24,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "calls",
+          "start_position": 25,
+          "end_position": 30,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.88,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.80
+        },
+        {
+          "text": "earnings",
+          "start_position": 38,
+          "end_position": 46,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.92,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "Satya",
+          "start_position": 50,
+          "end_position": 55,
+          "entity_type": "PERSON",
+          "confidence": 0.95,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.90
+        },
+        {
+          "text": "Azure",
+          "start_position": 58,
+          "end_position": 63,
+          "entity_type": "PRODUCT",
+          "confidence": 0.98,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.92
+        },
+        {
+          "text": "Cloud revenue",
+          "start_position": 90,
+          "end_position": 103,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.95,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.88
+        },
+        {
+          "text": "35% YoY",
+          "start_position": 107,
+          "end_position": 114,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.92,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "Microsoft",
+          "start_position": 155,
+          "end_position": 164,
+          "entity_type": "COMPANY",
+          "confidence": 1.0,
+          "mapped_ticker": "MSFT",
+          "ticker_confidence": 0.98
+        },
+        {
+          "text": "Amazon",
+          "start_position": 167,
+          "end_position": 173,
+          "entity_type": "COMPANY",
+          "confidence": 0.98,
+          "mapped_ticker": "AMZN",
+          "ticker_confidence": 0.95
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": 0.81,
+        "polarity": "VERY_POSITIVE",
+        "confidence": 0.93,
+        "ticker_sentiments": {
+          "MSFT": {
+            "score": 0.81,
+            "polarity": "VERY_POSITIVE",
+            "confidence": 0.93
+          },
+          "AMZN": {
+            "score": -0.15,
+            "polarity": "SLIGHTLY_NEGATIVE",
+            "confidence": 0.70
+          }
+        }
+      }
+    },
+    {
+      "sample_id": "sm_004",
+      "content_type": "SOCIAL_MEDIA",
+      "text": "Hot take: $NVDA is overvalued at current levels. P/E ratio of 85x is insane for any company. Jensen Huang's guidance was weak. AI bubble gonna pop soon. Taking profits at $800. 🐻",
+      "source_url": "https://stocktwits.com/user/bearmarket2024/message/456789",
+      "published_at": "2024-01-12T12:00:00Z",
+      "platform": "stocktwits",
+      "ground_truth_entities": [
+        {
+          "text": "$NVDA",
+          "start_position": 10,
+          "end_position": 15,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "P/E ratio",
+          "start_position": 53,
+          "end_position": 62,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.98,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "85x",
+          "start_position": 66,
+          "end_position": 69,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.95,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.80
+        },
+        {
+          "text": "Jensen Huang",
+          "start_position": 95,
+          "end_position": 107,
+          "entity_type": "PERSON",
+          "confidence": 1.0,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.95
+        },
+        {
+          "text": "guidance",
+          "start_position": 110,
+          "end_position": 118,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.88,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.75
+        },
+        {
+          "text": "AI bubble",
+          "start_position": 129,
+          "end_position": 138,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.80,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.60
+        },
+        {
+          "text": "$800",
+          "start_position": 170,
+          "end_position": 174,
+          "entity_type": "MONEY",
+          "confidence": 0.98,
+          "mapped_ticker": "NVDA",
+          "ticker_confidence": 0.90
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": -0.68,
+        "polarity": "NEGATIVE",
+        "confidence": 0.89,
+        "ticker_sentiments": {
+          "NVDA": {
+            "score": -0.68,
+            "polarity": "NEGATIVE",
+            "confidence": 0.89
+          }
+        }
+      }
+    },
+    {
+      "sample_id": "sm_005",
+      "content_type": "SOCIAL_MEDIA",
+      "text": "Neutral on $SPY this week. Fed meeting Wednesday could go either way. Powell's been dovish lately but inflation data mixed. Playing both sides with straddle at $480. 🤷‍♂️ #SPX #Trading",
+      "source_url": "https://reddit.com/r/options/comments/spy_straddle_play",
+      "published_at": "2024-01-10T16:45:00Z",
+      "platform": "reddit",
+      "ground_truth_entities": [
+        {
+          "text": "$SPY",
+          "start_position": 11,
+          "end_position": 15,
+          "entity_type": "TICKER",
+          "confidence": 1.0,
+          "mapped_ticker": "SPY",
+          "ticker_confidence": 1.0
+        },
+        {
+          "text": "this week",
+          "start_position": 16,
+          "end_position": 25,
+          "entity_type": "DATE",
+          "confidence": 0.85,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "Fed meeting",
+          "start_position": 27,
+          "end_position": 38,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.92,
+          "mapped_ticker": "SPY",
+          "ticker_confidence": 0.70
+        },
+        {
+          "text": "Wednesday",
+          "start_position": 39,
+          "end_position": 48,
+          "entity_type": "DATE",
+          "confidence": 0.95,
+          "mapped_ticker": null,
+          "ticker_confidence": null
+        },
+        {
+          "text": "Powell",
+          "start_position": 67,
+          "end_position": 73,
+          "entity_type": "PERSON",
+          "confidence": 0.98,
+          "mapped_ticker": "SPY",
+          "ticker_confidence": 0.80
+        },
+        {
+          "text": "inflation data",
+          "start_position": 102,
+          "end_position": 116,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.95,
+          "mapped_ticker": "SPY",
+          "ticker_confidence": 0.75
+        },
+        {
+          "text": "straddle",
+          "start_position": 143,
+          "end_position": 151,
+          "entity_type": "FINANCIAL_METRIC",
+          "confidence": 0.90,
+          "mapped_ticker": "SPY",
+          "ticker_confidence": 0.85
+        },
+        {
+          "text": "$480",
+          "start_position": 155,
+          "end_position": 159,
+          "entity_type": "MONEY",
+          "confidence": 0.98,
+          "mapped_ticker": "SPY",
+          "ticker_confidence": 0.90
+        },
+        {
+          "text": "#SPX",
+          "start_position": 164,
+          "end_position": 168,
+          "entity_type": "TICKER",
+          "confidence": 0.92,
+          "mapped_ticker": "SPX",
+          "ticker_confidence": 0.88
+        }
+      ],
+      "expected_sentiment": {
+        "overall_score": 0.05,
+        "polarity": "NEUTRAL",
+        "confidence": 0.95,
+        "ticker_sentiments": {
+          "SPY": {
+            "score": 0.05,
+            "polarity": "NEUTRAL",
+            "confidence": 0.95
+          },
+          "SPX": {
+            "score": 0.05,
+            "polarity": "NEUTRAL",
+            "confidence": 0.90
+          }
+        }
+      }
+    }
+  ],
+  "validation_metrics": {
+    "expected_accuracy": {
+      "ticker_extraction": 0.98,
+      "company_identification": 0.85,
+      "person_recognition": 0.88,
+      "financial_metrics": 0.82,
+      "product_identification": 0.80,
+      "location_recognition": 0.85,
+      "date_extraction": 0.75,
+      "money_amounts": 0.95,
+      "hashtag_entities": 0.85
+    },
+    "sentiment_accuracy": {
+      "overall_sentiment": 0.92,
+      "ticker_specific_sentiment": 0.90,
+      "polarity_classification": 0.94
+    },
+    "ticker_mapping_accuracy": 0.95
+  },
+  "social_media_specific": {
+    "emoji_handling": "Emojis should not be extracted as entities but may influence sentiment",
+    "hashtag_extraction": "Hashtags containing ticker symbols or company names should be extracted",
+    "casual_language": "Informal language and slang should be handled appropriately",
+    "abbreviations": {
+      "YoY": "Year over Year",
+      "P/E": "Price to Earnings",
+      "Fed": "Federal Reserve",
+      "calls": "Call options",
+      "puts": "Put options"
+    }
+  },
+  "evaluation_criteria": {
+    "entity_matching": {
+      "exact_match": "Entity text and boundaries must match exactly",
+      "partial_match": "Entity text matches but boundaries are within 3 characters (due to informal text)",
+      "type_match": "Entity type must match exactly",
+      "confidence_threshold": 0.6
+    },
+    "sentiment_matching": {
+      "score_tolerance": 0.2,
+      "polarity_must_match": true,
+      "confidence_threshold": 0.5
+    },
+    "ticker_mapping": {
+      "primary_ticker_accuracy": 0.95,
+      "secondary_ticker_accuracy": 0.85,
+      "confidence_threshold": 0.6
+    }
+  }
+}
