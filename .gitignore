@@ -254,3 +254,4 @@ docker-compose.override.yml
 # Test results
 test-results/
 playwright-report/
+.vercel
