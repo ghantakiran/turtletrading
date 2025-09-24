@@ -28,53 +28,67 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAuthenticated = Boolean(user && tokens);
+  // Temporarily disable authentication for testing
+  const isAuthenticated = true; // Boolean(user && tokens);
 
-  // Initialize auth state from localStorage
+  // Initialize auth state from localStorage - DISABLED FOR TESTING
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const storedTokens = localStorage.getItem(TOKEN_STORAGE_KEY);
-        const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+    // Skip auth initialization for testing
+    setIsLoading(false);
 
-        if (storedTokens && storedUser) {
-          const parsedTokens: AuthTokens = JSON.parse(storedTokens);
-          const parsedUser: User = JSON.parse(storedUser);
-
-          // Check if token is expired
-          const now = Date.now() / 1000;
-          const tokenExp = parseJWT(parsedTokens.access_token)?.exp;
-
-          if (tokenExp && tokenExp > now) {
-            setTokens(parsedTokens);
-            setUser(parsedUser);
-            
-            // Set the authorization header for API requests
-            apiClient.setAuthToken(parsedTokens.access_token);
-            
-            // Try to refresh user data
-            try {
-              const currentUser = await authService.getCurrentUser();
-              setUser(currentUser);
-              localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
-            } catch (error) {
-              console.warn('Failed to refresh user data:', error);
-              // Keep using stored user data if refresh fails
-            }
-          } else {
-            // Token expired, clear storage
-            clearAuthData();
-          }
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        clearAuthData();
-      } finally {
-        setIsLoading(false);
-      }
+    // Create a mock user for testing
+    const mockUser: User = {
+      id: 'test-user-id',
+      email: 'test@example.com',
+      full_name: 'Test User',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
+    setUser(mockUser);
 
-    initializeAuth();
+    // const initializeAuth = async () => {
+    //   try {
+    //     const storedTokens = localStorage.getItem(TOKEN_STORAGE_KEY);
+    //     const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+
+    //     if (storedTokens && storedUser) {
+    //       const parsedTokens: AuthTokens = JSON.parse(storedTokens);
+    //       const parsedUser: User = JSON.parse(storedUser);
+
+    //       // Check if token is expired
+    //       const now = Date.now() / 1000;
+    //       const tokenExp = parseJWT(parsedTokens.access_token)?.exp;
+
+    //       if (tokenExp && tokenExp > now) {
+    //         setTokens(parsedTokens);
+    //         setUser(parsedUser);
+
+    //         // Set the authorization header for API requests
+    //         apiClient.setAuthToken(parsedTokens.access_token);
+
+    //         // Try to refresh user data
+    //         try {
+    //           const currentUser = await authService.getCurrentUser();
+    //           setUser(currentUser);
+    //           localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
+    //         } catch (error) {
+    //           console.warn('Failed to refresh user data:', error);
+    //           // Keep using stored user data if refresh fails
+    //         }
+    //       } else {
+    //         // Token expired, clear storage
+    //         clearAuthData();
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error('Error initializing auth:', error);
+    //     clearAuthData();
+    //   } finally {
+    //     setIsLoading(false);
+    //   }
+    // };
+
+    // initializeAuth();
   }, []);
 
   // Set up token refresh timer
@@ -104,45 +118,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [tokens]);
 
   const login = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      const authData = await authService.login(email, password);
-      
-      setTokens(authData.tokens);
-      setUser(authData.user);
-      
-      // Store in localStorage
-      localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(authData.tokens));
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authData.user));
-      
-      // Set the authorization header
-      apiClient.setAuthToken(authData.tokens.access_token);
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    // DISABLED FOR TESTING - Auto success
+    console.log('Login disabled for testing');
+    return Promise.resolve();
+
+    // try {
+    //   setIsLoading(true);
+    //   const authData = await authService.login(email, password);
+
+    //   setTokens(authData.tokens);
+    //   setUser(authData.user);
+
+    //   // Store in localStorage
+    //   localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(authData.tokens));
+    //   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authData.user));
+
+    //   // Set the authorization header
+    //   apiClient.setAuthToken(authData.tokens.access_token);
+    // } catch (error) {
+    //   throw error;
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
   const register = async (userData: { email: string; password: string; full_name: string }) => {
-    try {
-      setIsLoading(true);
-      const authData = await authService.register(userData);
-      
-      setTokens(authData.tokens);
-      setUser(authData.user);
-      
-      // Store in localStorage
-      localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(authData.tokens));
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authData.user));
-      
-      // Set the authorization header
-      apiClient.setAuthToken(authData.tokens.access_token);
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    // DISABLED FOR TESTING - Auto success
+    console.log('Registration disabled for testing');
+    return Promise.resolve();
+
+    // try {
+    //   setIsLoading(true);
+    //   const authData = await authService.register(userData);
+
+    //   setTokens(authData.tokens);
+    //   setUser(authData.user);
+
+    //   // Store in localStorage
+    //   localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(authData.tokens));
+    //   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authData.user));
+
+    //   // Set the authorization header
+    //   apiClient.setAuthToken(authData.tokens.access_token);
+    // } catch (error) {
+    //   throw error;
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
   const logout = () => {

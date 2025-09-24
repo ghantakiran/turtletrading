@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "name": "turtle-trading-frontend",
-  "alias": ["turtle-trading.vercel.app"],
   "build": {
     "env": {
       "VITE_API_BASE_URL": "https://turtle-trading-backend.vercel.app",
@@ -38,21 +36,6 @@
           "value": "strict-origin-when-cross-origin"
         }
       ]
-    }
-  ],
-  "functions": {
-    "app/api/**/*.ts": {
-      "runtime": "@vercel/node"
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "https://turtle-trading-backend.vercel.app/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
     }
   ]
 }
