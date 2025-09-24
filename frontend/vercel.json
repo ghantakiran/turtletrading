@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "name": "turtle-trading-frontend",
+  "alias": ["turtle-trading.vercel.app"],
+  "build": {
+    "env": {
+      "VITE_API_BASE_URL": "https://turtle-trading-backend.vercel.app",
+      "VITE_WS_BASE_URL": "wss://turtle-trading-backend.vercel.app",
+      "VITE_ENABLE_MOCK_DATA": "true",
+      "VITE_DEBUG_MODE": "false"
+    }
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://turtle-trading-backend.vercel.app/api/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "app/api/**/*.ts": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://turtle-trading-backend.vercel.app/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

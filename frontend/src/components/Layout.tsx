@@ -46,30 +46,28 @@ const Layout: React.FC = () => {
   }, [location.pathname, isMobile]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background-primary">
+      {/* Dark-first background */}
+
       {/* Header Component */}
       <ErrorBoundaryWithStore level="component">
-        <Header
-          navigation={[
-            { name: 'Dashboard', href: '/', icon: '📊' },
-            { name: 'Market', href: '/market', icon: '📈' },
-            { name: 'Yahoo Demo', href: '/yahoo-demo', icon: '🎨' },
-            { name: 'Profile', href: '/profile', icon: '👤' },
-            { name: 'Settings', href: '/settings', icon: '⚙️' },
-            { name: 'About', href: '/about', icon: 'ℹ️' },
-          ]}
-          onSidebarToggle={() => setIsSidebarOpen(true)}
-          showSidebarToggle={isMobile}
-        />
+        <div className="relative z-20">
+          <Header
+            onSidebarToggle={() => setIsSidebarOpen(true)}
+            showSidebarToggle={isMobile}
+          />
+        </div>
       </ErrorBoundaryWithStore>
 
       {/* Breadcrumb Navigation */}
       <ErrorBoundaryWithStore level="component">
-        <Breadcrumb />
+        <div className="relative z-20">
+          <Breadcrumb />
+        </div>
       </ErrorBoundaryWithStore>
 
       {/* Main Layout with Sidebar */}
-      <div className="flex">
+      <div className="flex relative z-10">
         {/* Sidebar Component */}
         <ErrorBoundaryWithStore level="component">
           <AsyncErrorBoundary isolate>
@@ -82,26 +80,30 @@ const Layout: React.FC = () => {
 
         {/* Main Content Area */}
         <main className={`
-          flex-1 px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300
+          flex-1 px-6 py-6 transition-all duration-200
           ${!isMobile && !sidebarCollapsed ? 'ml-72' : ''}
         `}>
-          <Outlet />
+          <div className="max-w-6xl mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
 
       {/* Footer Component */}
       <ErrorBoundaryWithStore level="component">
-        <Footer />
+        <div className="relative z-20">
+          <Footer />
+        </div>
       </ErrorBoundaryWithStore>
-      
-      {/* Mobile Sidebar Toggle Button */}
+
+      {/* Mobile Menu Button */}
       {isMobile && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="fixed bottom-6 right-6 z-30 p-3 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-colors md:hidden"
+          className="fixed bottom-4 right-4 z-50 p-3 bg-primary-500 text-white rounded-lg shadow-lg hover:bg-primary-600 transition-colors md:hidden focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 focus:ring-offset-background-primary"
           aria-label="Open sidebar"
         >
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>

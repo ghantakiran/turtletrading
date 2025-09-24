@@ -7,23 +7,56 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
-      // Custom color palette for financial trading platform
+      // PRD-specified dark-first theme colors
       colors: {
-        // Primary brand colors
+        // Dark-first background palette (PRD specified)
+        background: {
+          primary: '#1a1a1a',      // Main background
+          secondary: '#0f172a',    // Secondary background
+          tertiary: '#2d2d2d',     // Card/surface backgrounds
+          accent: '#1e293b',       // Accent surfaces
+        },
+        // Primary brand colors with PRD integration
         primary: {
           50: '#f0f9ff',
           100: '#e0f2fe',
           200: '#bae6fd',
           300: '#7dd3fc',
           400: '#38bdf8',
-          500: '#0ea5e9', // Main brand color
+          500: '#3b82f6',          // PRD specified blue
           600: '#0284c7',
           700: '#0369a1',
           800: '#075985',
           900: '#0c4a6e',
           950: '#082f49',
         },
-        // Secondary colors for accents
+        // Success/Bull colors (PRD specified)
+        success: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#10b981',          // PRD specified green
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+        },
+        // Error/Bear colors (PRD specified)
+        error: {
+          50: '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#ef4444',          // PRD specified red
+          600: '#dc2626',
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#7f1d1d',
+        },
+        // Secondary/neutral colors
         secondary: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -33,8 +66,8 @@ module.exports = {
           500: '#64748b',
           600: '#475569',
           700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
+          800: '#1e293b',          // PRD specified surface
+          900: '#0f172a',          // PRD specified secondary bg
           950: '#020617',
         },
         // Trading-specific colors
@@ -152,6 +185,7 @@ module.exports = {
         '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
         'inner': 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
         'glow': '0 0 20px rgb(59 130 246 / 0.3)',
+        'glow-blue': '0 0 20px rgb(59 130 246 / 0.5), 0 0 40px rgb(59 130 246 / 0.3)',
         'glow-green': '0 0 20px rgb(34 197 94 / 0.3)',
         'glow-red': '0 0 20px rgb(239 68 68 / 0.3)',
       },
@@ -164,6 +198,13 @@ module.exports = {
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
+        'wiggle': 'wiggle 1s ease-in-out infinite',
+        'float': 'float 3s ease-in-out infinite',
+        'glow': 'glow 2s ease-in-out infinite alternate',
+        'shimmer': 'shimmer 2s linear infinite',
+        'breathe': 'breathe 4s ease-in-out infinite',
+        'typewriter': 'typewriter 3.5s steps(40, end), blink-caret 0.75s step-end infinite',
+        'scroll': 'scroll 30s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -181,6 +222,38 @@ module.exports = {
         scaleIn: {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        wiggle: {
+          '0%, 100%': { transform: 'rotate(-3deg)' },
+          '50%': { transform: 'rotate(3deg)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        glow: {
+          '0%': { boxShadow: '0 0 5px rgba(59, 130, 246, 0.5)' },
+          '100%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6)' },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        breathe: {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.05)' },
+        },
+        typewriter: {
+          'from': { width: '0' },
+          'to': { width: '100%' },
+        },
+        'blink-caret': {
+          'from, to': { borderColor: 'transparent' },
+          '50%': { borderColor: 'currentColor' },
+        },
+        scroll: {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(-100%)' },
         },
       },
       // Custom gradients
@@ -220,5 +293,164 @@ module.exports = {
       strategy: 'class',
     }),
     require('@tailwindcss/typography'),
+    // Custom component styles plugin
+    function({ addComponents, theme }) {
+      addComponents({
+        // Dark-first card components
+        '.card': {
+          backgroundColor: theme('colors.background.tertiary'),
+          borderRadius: theme('borderRadius.lg'),
+          padding: theme('spacing.6'),
+          boxShadow: theme('boxShadow.md'),
+          border: `1px solid ${theme('colors.secondary.700')}`,
+        },
+        '.card-hover': {
+          backgroundColor: theme('colors.background.tertiary'),
+          borderRadius: theme('borderRadius.lg'),
+          padding: theme('spacing.6'),
+          boxShadow: theme('boxShadow.md'),
+          border: `1px solid ${theme('colors.secondary.700')}`,
+          transition: 'all 0.2s ease-in-out',
+          '&:hover': {
+            boxShadow: theme('boxShadow.lg'),
+            borderColor: theme('colors.primary.500'),
+            transform: 'translateY(-1px)',
+          },
+        },
+        // Button components with PRD colors
+        '.btn-primary': {
+          backgroundColor: theme('colors.primary.500'),
+          color: theme('colors.white'),
+          padding: `${theme('spacing.3')} ${theme('spacing.6')}`,
+          borderRadius: theme('borderRadius.lg'),
+          fontWeight: theme('fontWeight.medium'),
+          border: 'none',
+          transition: 'all 0.2s ease-in-out',
+          '&:hover': {
+            backgroundColor: theme('colors.primary.600'),
+            boxShadow: theme('boxShadow.glow-blue'),
+          },
+          '&:focus': {
+            outline: 'none',
+            ring: `2px solid ${theme('colors.primary.500')}`,
+            ringOffset: '2px',
+            ringOffsetColor: theme('colors.background.primary'),
+          },
+        },
+        '.btn-success': {
+          backgroundColor: theme('colors.success.500'),
+          color: theme('colors.white'),
+          padding: `${theme('spacing.3')} ${theme('spacing.6')}`,
+          borderRadius: theme('borderRadius.lg'),
+          fontWeight: theme('fontWeight.medium'),
+          border: 'none',
+          transition: 'all 0.2s ease-in-out',
+          '&:hover': {
+            backgroundColor: theme('colors.success.600'),
+            boxShadow: theme('boxShadow.glow-green'),
+          },
+          '&:focus': {
+            outline: 'none',
+            ring: `2px solid ${theme('colors.success.500')}`,
+            ringOffset: '2px',
+            ringOffsetColor: theme('colors.background.primary'),
+          },
+        },
+        '.btn-error': {
+          backgroundColor: theme('colors.error.500'),
+          color: theme('colors.white'),
+          padding: `${theme('spacing.3')} ${theme('spacing.6')}`,
+          borderRadius: theme('borderRadius.lg'),
+          fontWeight: theme('fontWeight.medium'),
+          border: 'none',
+          transition: 'all 0.2s ease-in-out',
+          '&:hover': {
+            backgroundColor: theme('colors.error.600'),
+            boxShadow: theme('boxShadow.glow-red'),
+          },
+          '&:focus': {
+            outline: 'none',
+            ring: `2px solid ${theme('colors.error.500')}`,
+            ringOffset: '2px',
+            ringOffsetColor: theme('colors.background.primary'),
+          },
+        },
+        // Chip/badge components
+        '.chip': {
+          display: 'inline-flex',
+          alignItems: 'center',
+          padding: `${theme('spacing.1')} ${theme('spacing.3')}`,
+          borderRadius: theme('borderRadius.full'),
+          fontSize: theme('fontSize.sm'),
+          fontWeight: theme('fontWeight.medium'),
+          border: `1px solid ${theme('colors.secondary.600')}`,
+          backgroundColor: theme('colors.background.accent'),
+          color: theme('colors.secondary.100'),
+        },
+        '.chip-success': {
+          backgroundColor: theme('colors.success.500'),
+          borderColor: theme('colors.success.600'),
+          color: theme('colors.white'),
+        },
+        '.chip-error': {
+          backgroundColor: theme('colors.error.500'),
+          borderColor: theme('colors.error.600'),
+          color: theme('colors.white'),
+        },
+        // Toast notification styles
+        '.toast': {
+          backgroundColor: theme('colors.background.tertiary'),
+          borderRadius: theme('borderRadius.lg'),
+          padding: theme('spacing.4'),
+          boxShadow: theme('boxShadow.xl'),
+          border: `1px solid ${theme('colors.secondary.600')}`,
+          color: theme('colors.secondary.100'),
+          maxWidth: '400px',
+          animation: theme('animation.slide-up'),
+        },
+        '.toast-success': {
+          borderColor: theme('colors.success.500'),
+          backgroundColor: theme('colors.success.900'),
+          color: theme('colors.success.100'),
+        },
+        '.toast-error': {
+          borderColor: theme('colors.error.500'),
+          backgroundColor: theme('colors.error.900'),
+          color: theme('colors.error.100'),
+        },
+        // Skeleton loading states
+        '.skeleton': {
+          backgroundColor: theme('colors.secondary.700'),
+          borderRadius: theme('borderRadius.md'),
+          animation: theme('animation.pulse'),
+        },
+        '.skeleton-text': {
+          height: theme('spacing.4'),
+          backgroundColor: theme('colors.secondary.700'),
+          borderRadius: theme('borderRadius.sm'),
+          animation: theme('animation.pulse'),
+        },
+        // Tab navigation
+        '.tab': {
+          padding: `${theme('spacing.3')} ${theme('spacing.4')}`,
+          borderRadius: theme('borderRadius.lg'),
+          fontWeight: theme('fontWeight.medium'),
+          color: theme('colors.secondary.300'),
+          backgroundColor: 'transparent',
+          border: 'none',
+          transition: 'all 0.2s ease-in-out',
+          cursor: 'pointer',
+          '&:hover': {
+            color: theme('colors.secondary.100'),
+            backgroundColor: theme('colors.secondary.800'),
+          },
+          '&.active': {
+            color: theme('colors.primary.400'),
+            backgroundColor: theme('colors.primary.900'),
+            borderColor: theme('colors.primary.600'),
+          },
+        },
+      });
+    },
   ],
 }

@@ -84,13 +84,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-primary-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 dark:bg-primary-900 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary-200 dark:bg-secondary-900 rounded-full opacity-20 animate-pulse delay-1000"></div>
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-bull-200 dark:bg-bull-800 rounded-full opacity-10 animate-float"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-warning-200 dark:bg-warning-800 rounded-full opacity-10 animate-float delay-2000"></div>
+      </div>
+
+      <div className="max-w-md w-full space-y-8 relative z-10">
         {/* Header */}
-        <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900">
-            <svg className="h-6 w-6 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <div className="text-center animate-fade-in">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 shadow-xl animate-breathe">
+            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
@@ -108,7 +116,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
         </div>
 
         {/* Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-white/20 dark:border-gray-700/20 animate-slide-up" onSubmit={handleSubmit}>
           {/* Global Error */}
           {authError && (
             <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
@@ -237,7 +245,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-600 dark:hover:bg-primary-700"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 hover:shadow-glow active:scale-95"
             >
               {isLoading ? (
                 <>
@@ -255,26 +263,29 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
 
           {/* Demo Credentials */}
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-              <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-                Demo Credentials
-              </h4>
+            <div className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm animate-fade-in">
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Demo Credentials
+                </h4>
+              </div>
               <div className="text-xs text-blue-600 dark:text-blue-300 space-y-1">
-                <div>Admin: admin@turtletrading.com / admin123</div>
-                <div>User: user@turtletrading.com / user123</div>
+                <div>Admin: admin@turtletrading.com / Admin123!</div>
+                <div>User: user@turtletrading.com / User123!</div>
               </div>
               <button
                 type="button"
                 onClick={() => {
                   setFormData({
                     email: 'admin@turtletrading.com',
-                    password: 'admin123',
+                    password: 'Admin123!',
                     remember: false,
                   });
                 }}
-                className="mt-2 text-xs text-blue-600 dark:text-blue-300 hover:text-blue-500 underline"
+                className="mt-3 w-full text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-300 hover:text-blue-500 rounded-lg py-2 px-3 transition-all duration-200 transform hover:scale-105 active:scale-95"
               >
-                Fill admin credentials
+                🚀 Fill admin credentials
               </button>
             </div>
           )}

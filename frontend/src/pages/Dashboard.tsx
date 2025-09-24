@@ -1,243 +1,163 @@
-import React, { useEffect } from 'react';
-import { useMarketStore, useUIStore } from '../stores';
-import { useMarketOverview, useTopMovers } from '../hooks/useMarketData';
-import { useMultipleStockPrices } from '../hooks/useStockData';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import DashboardGrid from '../components/DashboardGrid';
+import { useMarketStore } from '../stores';
+import AnimatedBackground from '../components/ui/AnimatedBackground';
+import GlassCard from '../components/ui/GlassCard';
+import ModernLoader from '../components/ui/ModernLoader';
 
 const Dashboard: React.FC = () => {
-  // Zustand stores
-  const { 
-    marketIndices, 
-    stockPrices, 
-    watchlists, 
-    selectedWatchlist, 
-    isLoading, 
-    error,
-    fetchMarketData,
-    setLoading,
-    setError 
-  } = useMarketStore();
-  
-  const { showNotification } = useUIStore();
+  const [editMode, setEditMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { isConnected } = useMarketStore();
 
-  // React Query hooks for server state
-  const { 
-    data: marketOverview, 
-    isLoading: marketLoading, 
-    error: marketError,
-    refetch: refetchMarket 
-  } = useMarketOverview();
-  
-  const { 
-    data: topMovers, 
-    isLoading: moversLoading 
-  } = useTopMovers('gainers');
-
-  // Get current watchlist
-  const currentWatchlist = watchlists.find(w => w.id === selectedWatchlist);
-  
-  // Use real data from React Query when available, fallback to mock data
-  const stocksToShow = topMovers || [
-    { symbol: 'AAPL', name: 'Apple Inc.', price: 175.23, change: 2.45, changePercent: 1.42 },
-    { symbol: 'MSFT', name: 'Microsoft Corp.', price: 378.91, change: -1.23, changePercent: -0.32 },
-    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 891.14, change: 15.67, changePercent: 1.79 },
-  ];
-
+  // Simulate initial loading
   useEffect(() => {
-    // Fetch market data using Zustand store (kept for backwards compatibility)
-    const loadData = async () => {
-      try {
-        await fetchMarketData();
-        // React Query handles its own notifications through error boundaries
-      } catch (err) {
-        // Fallback notification for Zustand errors
-        showNotification({
-          type: 'error',
-          title: 'Update Failed',
-          message: 'Failed to refresh market data',
-          duration: 5000
-        });
-      }
-    };
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
-    loadData();
-  }, [fetchMarketData, showNotification]);
-
-  // Show loading state if either Zustand or React Query is loading
-  if (isLoading || marketLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-        <span className="ml-3 text-gray-600 dark:text-gray-400">
-          Loading market data...
-        </span>
-      </div>
-    );
-  }
-
-  // Show error state for critical errors
-  if (error && !marketOverview) {
-    return (
-      <div className="card p-6 bg-bear-50 border-bear-200">
-        <h2 className="text-lg font-semibold text-bear-800 mb-2">Error Loading Dashboard</h2>
-        <p className="text-bear-600">{error}</p>
-        {marketError && (
-          <p className="text-bear-600 mt-2">
-            Server Error: {marketError instanceof Error ? marketError.message : 'Unknown error'}
-          </p>
-        )}
-        <button 
-          onClick={() => refetchMarket()} 
-          className="btn btn-primary mt-4"
-        >
-          Retry
-        </button>
-      </div>
-    );
+  if (isLoading) {
+    return <ModernLoader variant="market" text="Loading Trading Dashboard..." fullScreen />;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Market overview and your trading insights
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Last updated</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {new Date().toLocaleTimeString()}
-          </p>
-        </div>
-      </div>
+    <div data-testid="dashboard" className="relative min-h-screen">
+      {/* Animated Background */}
+      <AnimatedBackground variant="gradient" />
 
-      {/* Market Indices */}
-      <div className="dashboard-grid">
-        <div className="dashboard-card">
-          <h3 className="text-lg font-semibold mb-3">S&P 500</h3>
-          <div className="market-price">
-            {marketOverview?.indices?.find(i => i.symbol === 'SPY')?.value?.toFixed(2) || 
-             marketIndices['SPY']?.value?.toFixed(2) || '4,530.25'}
-          </div>
-          <div className={`text-sm ${
-            ((marketOverview?.indices?.find(i => i.symbol === 'SPY')?.change) || 
-             marketIndices['SPY']?.change || 12.45) >= 0 
-              ? 'market-change-positive' 
-              : 'market-change-negative'
-          }`}>
-            {((marketOverview?.indices?.find(i => i.symbol === 'SPY')?.change) || 
-             marketIndices['SPY']?.change || 12.45) >= 0 ? '+' : ''}
-            {((marketOverview?.indices?.find(i => i.symbol === 'SPY')?.change) || 
-             marketIndices['SPY']?.change || 12.45)?.toFixed(2)} 
-            ({((marketOverview?.indices?.find(i => i.symbol === 'SPY')?.changePercent) || 
-             marketIndices['SPY']?.changePercent || 0.28)?.toFixed(2)}%)
-          </div>
-        </div>
-
-        <div className="dashboard-card">
-          <h3 className="text-lg font-semibold mb-3">NASDAQ</h3>
-          <div className="market-price">
-            {marketOverview?.indices?.find(i => i.symbol === 'QQQ')?.value?.toFixed(2) || 
-             marketIndices['QQQ']?.value?.toFixed(2) || '15,845.73'}
-          </div>
-          <div className={`text-sm ${
-            ((marketOverview?.indices?.find(i => i.symbol === 'QQQ')?.change) || 
-             marketIndices['QQQ']?.change || -8.25) >= 0 
-              ? 'market-change-positive' 
-              : 'market-change-negative'
-          }`}>
-            {((marketOverview?.indices?.find(i => i.symbol === 'QQQ')?.change) || 
-             marketIndices['QQQ']?.change || -8.25) >= 0 ? '+' : ''}
-            {((marketOverview?.indices?.find(i => i.symbol === 'QQQ')?.change) || 
-             marketIndices['QQQ']?.change || -8.25)?.toFixed(2)} 
-            ({((marketOverview?.indices?.find(i => i.symbol === 'QQQ')?.changePercent) || 
-             marketIndices['QQQ']?.changePercent || -0.05)?.toFixed(2)}%)
-          </div>
-        </div>
-
-        <div className="dashboard-card">
-          <h3 className="text-lg font-semibold mb-3">My Watchlist</h3>
-          <div className="market-price text-primary-600">
-            {currentWatchlist?.symbols.length || 5}
-          </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Stocks tracked
-          </div>
-        </div>
-
-        <div className="dashboard-card">
-          <h3 className="text-lg font-semibold mb-3">VIX</h3>
-          <div className="market-price text-warning-600">
-            {marketOverview?.vix?.value?.toFixed(2) || '23.45'}
-          </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Volatility index
-          </div>
-        </div>
-      </div>
-
-      {/* Top Stocks */}
-      <div className="card">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Top Movers</h2>
-          <div className="space-y-3">
-            {stocksToShow.map((stock) => (
-              <div key={stock.symbol} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
-                    <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
-                      {stock.symbol.slice(0, 2)}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-100">{stock.symbol}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">{stock.name}</div>
-                  </div>
+      {/* Dashboard Content */}
+      <motion.div
+        className="relative z-10 space-y-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        {/* Enhanced Dashboard Header */}
+        <GlassCard className="p-8 mb-8">
+          <div className="flex items-center justify-between">
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="flex items-center space-x-4 mb-2">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/25">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">
-                    ${stock.price.toFixed(2)}
-                  </div>
-                  <div className={`text-sm ${
-                    stock.change >= 0 ? 'market-change-positive' : 'market-change-negative'
-                  }`}>
-                    {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)} ({stock.changePercent.toFixed(2)}%)
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-secondary-200 bg-clip-text text-transparent">
+                    Trading Dashboard
+                  </h1>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success-500 animate-pulse' : 'bg-error-500'}`} />
+                    <p className="text-secondary-400 text-lg">
+                      {isConnected ? 'Live market data • Real-time insights' : 'Market data offline'}
+                    </p>
                   </div>
                 </div>
               </div>
-            ))}
-            {moversLoading && (
-              <div className="flex items-center justify-center p-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
-                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Loading top movers...</span>
+            </motion.div>
+
+            <motion.div
+              className="flex items-center space-x-6"
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              {/* Enhanced Portfolio Balance Display */}
+              <div className="text-right">
+                <motion.div
+                  className="text-3xl font-bold text-transparent bg-gradient-to-r from-success-400 to-success-500 bg-clip-text"
+                  animate={{ scale: [1, 1.02, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  $142,750.85
+                </motion.div>
+                <motion.div
+                  className="flex items-center justify-end text-success-400 text-base mt-1"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <motion.svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    animate={{ y: [-2, 0, -2] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 14l9-9 9 9" />
+                  </motion.svg>
+                  <span className="font-semibold">+$3,450.12 (2.48%)</span>
+                </motion.div>
+                <div className="text-sm text-secondary-500 mt-1">
+                  Today's P&L
+                </div>
               </div>
+
+              {/* Performance Indicators */}
+              <div className="flex space-x-4">
+                <motion.div
+                  className="text-center px-4 py-3 bg-white/5 rounded-xl border border-white/10"
+                  whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.1)' }}
+                >
+                  <div className="text-lg font-bold text-bull-400">87.5%</div>
+                  <div className="text-xs text-secondary-400">Win Rate</div>
+                </motion.div>
+                <motion.div
+                  className="text-center px-4 py-3 bg-white/5 rounded-xl border border-white/10"
+                  whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.1)' }}
+                >
+                  <div className="text-lg font-bold text-primary-400">2.4</div>
+                  <div className="text-xs text-secondary-400">Sharpe</div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        </GlassCard>
+
+        {/* Enhanced Dashboard Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        >
+          <DashboardGrid editMode={editMode} onEditModeChange={setEditMode} />
+        </motion.div>
+      </motion.div>
+
+      {/* Floating Action Button */}
+      <AnimatePresence>
+        <motion.button
+          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full shadow-lg shadow-primary-500/25 flex items-center justify-center text-white hover:shadow-xl hover:shadow-primary-500/40 z-50"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1 }}
+          onClick={() => setEditMode(!editMode)}
+          title={editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
+        >
+          <motion.svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            animate={{ rotate: editMode ? 45 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {editMode ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="card">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="btn btn-primary">
-              📊 Analyze Stock
-            </button>
-            <button className="btn btn-secondary">
-              📈 View Market
-            </button>
-            <button className="btn btn-secondary">
-              🔔 Set Alert
-            </button>
-            <button className="btn btn-secondary">
-              📋 Portfolio
-            </button>
-          </div>
-        </div>
-      </div>
+          </motion.svg>
+        </motion.button>
+      </AnimatePresence>
     </div>
   );
 };

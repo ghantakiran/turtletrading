@@ -13,17 +13,18 @@ interface SidebarProps {
   }>;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ 
-  isOpen = true, 
+const Sidebar: React.FC<SidebarProps> = ({
+  isOpen = true,
   onClose,
   navigation = [
     { name: 'Dashboard', href: '/', icon: '📊' },
-    { name: 'Market Overview', href: '/market', icon: '📈' },
-    { name: 'Stock Analysis', href: '/stocks', icon: '🔍' },
-    { name: 'My Portfolio', href: '/portfolio', icon: '📋' },
+    { name: 'Portfolio', href: '/portfolio', icon: '💼' },
+    { name: 'Watchlist', href: '/watchlist', icon: '👁️' },
+    { name: 'Analytics', href: '/analytics', icon: '📈' },
     { name: 'Alerts', href: '/alerts', icon: '🔔', badge: '3' },
+    { name: 'Market', href: '/market', icon: '🌍' },
+    { name: 'News & Sentiment', href: '/sentiment', icon: '📰' },
     { name: 'Settings', href: '/settings', icon: '⚙️' },
-    { name: 'About', href: '/about', icon: 'ℹ️' },
   ]
 }) => {
   const location = useLocation();
@@ -66,21 +67,21 @@ const Sidebar: React.FC<SidebarProps> = ({
       
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
+        fixed inset-y-0 left-0 z-50 w-72 bg-background-secondary border-r border-secondary-700
         transform transition-transform duration-300 ease-in-out
         ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
         ${!isMobile ? 'relative' : ''}
       `}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-4 border-b border-secondary-700">
             <div className="flex items-center space-x-3">
               <div className="text-xl">🐢</div>
               <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                <div className="text-sm font-bold text-secondary-100">
                   TurtleTrading
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-secondary-400">
                   AI Analytics
                 </div>
               </div>
@@ -88,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             {isMobile && (
               <button
                 onClick={onClose}
-                className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700"
+                className="p-2 rounded-md text-secondary-300 hover:text-secondary-100 hover:bg-secondary-800"
                 aria-label="Close sidebar"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,8 +109,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 className={`
                   group flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors
                   ${isActive(item.href)
-                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-primary-900/50 text-primary-400 border border-primary-700'
+                    : 'text-secondary-300 hover:text-secondary-100 hover:bg-secondary-800 border border-transparent'
                   }
                 `}
               >
@@ -118,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-600 dark:bg-primary-900 dark:text-primary-300">
+                  <span className="chip-success">
                     {item.badge}
                   </span>
                 )}
@@ -127,39 +128,39 @@ const Sidebar: React.FC<SidebarProps> = ({
           </nav>
 
           {/* Market Summary Section */}
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="px-4 py-3 border-t border-secondary-700">
             <button
               onClick={() => toggleSection('market')}
-              className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center justify-between w-full text-left text-sm font-medium text-secondary-300 hover:text-secondary-100"
             >
               <span>📈 Market Summary</span>
-              <svg 
+              <svg
                 className={`h-4 w-4 transition-transform ${collapsedSections.includes('market') ? 'rotate-180' : ''}`}
-                fill="none" 
-                viewBox="0 0 24 24" 
+                fill="none"
+                viewBox="0 0 24 24"
                 stroke="currentColor"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            
+
             {!collapsedSections.includes('market') && (
               <div className="mt-2 space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500 dark:text-gray-400">S&P 500</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                  <span className="text-secondary-400">S&P 500</span>
+                  <span className="font-medium text-secondary-100">
                     {marketIndices['SPY']?.value?.toFixed(0) || '4,530'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500 dark:text-gray-400">NASDAQ</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                  <span className="text-secondary-400">NASDAQ</span>
+                  <span className="font-medium text-secondary-100">
                     {marketIndices['QQQ']?.value?.toFixed(0) || '15,846'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500 dark:text-gray-400">VIX</span>
-                  <span className="font-medium text-warning-600">23.45</span>
+                  <span className="text-secondary-400">VIX</span>
+                  <span className="font-medium text-warning-500">23.45</span>
                 </div>
               </div>
             )}
@@ -167,22 +168,22 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Watchlist Section */}
           {currentWatchlist && (
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-4 py-3 border-t border-secondary-700">
               <button
                 onClick={() => toggleSection('watchlist')}
-                className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                className="flex items-center justify-between w-full text-left text-sm font-medium text-secondary-300 hover:text-secondary-100"
               >
                 <span>⭐ {currentWatchlist.name}</span>
-                <svg 
+                <svg
                   className={`h-4 w-4 transition-transform ${collapsedSections.includes('watchlist') ? 'rotate-180' : ''}`}
-                  fill="none" 
-                  viewBox="0 0 24 24" 
+                  fill="none"
+                  viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
+
               {!collapsedSections.includes('watchlist') && (
                 <div className="mt-2 space-y-1">
                   {currentWatchlist.symbols.slice(0, 5).map((symbol) => (
@@ -190,14 +191,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                       key={symbol}
                       to={`/stock/${symbol}`}
                       onClick={isMobile ? onClose : undefined}
-                      className="flex justify-between items-center py-1 px-2 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                      className="flex justify-between items-center py-1 px-2 text-xs text-secondary-400 hover:text-secondary-100 hover:bg-secondary-800 rounded"
                     >
                       <span className="font-medium">{symbol}</span>
-                      <span className="text-bull-500">+1.2%</span>
+                      <span className="text-success-500">+1.2%</span>
                     </Link>
                   ))}
                   {currentWatchlist.symbols.length > 5 && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
+                    <div className="text-xs text-secondary-400 px-2 py-1">
                       +{currentWatchlist.symbols.length - 5} more
                     </div>
                   )}
@@ -208,7 +209,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* User Section */}
           {isAuthenticated && user && (
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-4 py-3 border-t border-secondary-700">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-medium">
@@ -216,10 +217,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                  <div className="text-sm font-medium text-secondary-100 truncate">
                     {user.email}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-secondary-400">
                     Pro Account
                   </div>
                 </div>

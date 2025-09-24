@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { Layout } from 'react-grid-layout';
 
 export interface Notification {
   id: string;
@@ -64,40 +65,43 @@ export interface UserPreferences {
 export interface UIState {
   // Theme and appearance
   theme: Theme;
-  
+
   // Layout and panels
   layout: LayoutSettings;
-  
+
   // Chart and visualization
   chartSettings: ChartSettings;
-  
+
   // User preferences
   userPreferences: UserPreferences;
-  
+
+  // Dashboard layout
+  dashboardLayout: { [key: string]: Layout[] };
+
   // Navigation and routing
   currentPage: string;
   previousPage: string | null;
   breadcrumbs: string[];
-  
+
   // Modals and dialogs
   modals: Modal[];
-  
+
   // Notifications and alerts
   notifications: Notification[];
-  
+
   // Loading states
   globalLoading: boolean;
   pageLoading: boolean;
   componentLoading: Record<string, boolean>;
-  
+
   // Error states
   globalError: string | null;
   pageError: string | null;
-  
+
   // Search and filters
   searchQuery: string;
   activeFilters: Record<string, any>;
-  
+
   // Responsive design
   isMobile: boolean;
   isTablet: boolean;
@@ -154,6 +158,11 @@ export interface UIState {
   
   // Responsive actions
   setScreenSize: (width: number, height: number) => void;
+
+  // Dashboard layout actions
+  updateDashboardLayout: (layouts: { [key: string]: Layout[] }) => void;
+  saveDashboardLayout: () => void;
+  resetDashboardLayout: () => void;
 }
 
 const useUIStore = create<UIState>()(
@@ -194,6 +203,7 @@ const useUIStore = create<UIState>()(
         pushNotifications: true,
         soundAlerts: false
       },
+      dashboardLayout: {},
       currentPage: '/',
       previousPage: null,
       breadcrumbs: [],
@@ -408,6 +418,20 @@ const useUIStore = create<UIState>()(
           isMobile: width < 768,
           isTablet: width >= 768 && width < 1024
         });
+      },
+
+      // Dashboard layout actions
+      updateDashboardLayout: (layouts: { [key: string]: Layout[] }) => {
+        set({ dashboardLayout: layouts });
+      },
+
+      saveDashboardLayout: () => {
+        // Layout is already persisted via zustand persist middleware
+        // This function can be used for additional save logic if needed
+      },
+
+      resetDashboardLayout: () => {
+        set({ dashboardLayout: {} });
       }
     }),
     {
@@ -418,7 +442,8 @@ const useUIStore = create<UIState>()(
         theme: state.theme,
         layout: state.layout,
         chartSettings: state.chartSettings,
-        userPreferences: state.userPreferences
+        userPreferences: state.userPreferences,
+        dashboardLayout: state.dashboardLayout
       })
     }
   )
