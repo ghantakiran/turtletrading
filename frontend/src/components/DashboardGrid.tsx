@@ -168,10 +168,19 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
         {editMode && (
           <div className="absolute top-0 left-0 right-0 z-10 bg-primary-500 text-white text-xs px-2 py-1 flex items-center justify-between">
             <span>{widgetConfig.title}</span>
-            <div className="flex items-center space-x-1">
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
+            <div className="flex items-center space-x-2">
+              {/* Mobile-friendly drag handle */}
+              <div className="drag-handle cursor-move p-1 rounded hover:bg-primary-600 active:bg-primary-700 touch-manipulation">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              </div>
+              {/* Mobile-friendly resize handle */}
+              <div className="resize-handle cursor-se-resize p-1 rounded hover:bg-primary-600 active:bg-primary-700 touch-manipulation">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </div>
             </div>
           </div>
         )}
@@ -240,6 +249,11 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
         useCSSTransforms={true}
         preventCollision={false}
         compactType="vertical"
+        // Enhanced mobile touch interactions
+        draggableHandle=".drag-handle"
+        resizeHandle=".resize-handle"
+        // Improved touch responsiveness
+        transformScale={1}
         // Minimum sizes for widgets
         onResizeStart={(layout: Layout[], oldItem: Layout, newItem: Layout) => {
           const widgetConfig = availableWidgets.find(w => w.id === newItem.i);

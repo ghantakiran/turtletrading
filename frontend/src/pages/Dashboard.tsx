@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-secondary-900 via-secondary-800 to-secondary-900 z-50 flex flex-col items-center justify-center">
-        <AnimatedBackground variant="particles" />
+        <AnimatedBackground variant="neural" />
         <div className="relative z-10 text-center space-y-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -70,7 +70,7 @@ const Dashboard: React.FC = () => {
               striped
               className="mb-4"
             />
-            <ModernLoader variant="market" text="Loading Trading Dashboard..." />
+            <ModernLoader variant="neural" size="lg" text="Initializing AI Trading Systems..." glow />
           </motion.div>
         </div>
       </div>
@@ -80,7 +80,7 @@ const Dashboard: React.FC = () => {
   return (
     <div data-testid="dashboard" className="relative min-h-screen">
       {/* Animated Background */}
-      <AnimatedBackground variant="gradient" />
+      <AnimatedBackground variant="trading" />
 
       {/* Dashboard Content */}
       <motion.div
@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
         transition={{ duration: 0.6, delay: 0.2 }}
       >
         {/* Enhanced Dashboard Header */}
-        <GlassCard className="p-8 mb-8">
+        <GlassCard variant="trading" glow interactive className="p-8 mb-8">
           <div className="flex items-center justify-between">
             <motion.div
               initial={{ x: -20, opacity: 0 }}
