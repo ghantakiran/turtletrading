@@ -5,22 +5,76 @@ import { useMarketStore } from '../stores';
 import AnimatedBackground from '../components/ui/AnimatedBackground';
 import GlassCard from '../components/ui/GlassCard';
 import ModernLoader from '../components/ui/ModernLoader';
+import SkeletonLoader from '../components/ui/SkeletonLoader';
+import Button from '../components/ui/Button';
+import ProgressBar, { CircularProgress } from '../components/ui/ProgressBar';
 
 const Dashboard: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [contentLoaded, setContentLoaded] = useState(false);
+  const [progress, setProgress] = useState(0);
   const { isConnected } = useMarketStore();
 
-  // Simulate initial loading
+  // Enhanced loading with progress simulation
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
+    const loadingSteps = [
+      { delay: 200, progress: 25, text: 'Connecting to markets...' },
+      { delay: 500, progress: 50, text: 'Loading portfolio data...' },
+      { delay: 800, progress: 75, text: 'Fetching real-time prices...' },
+      { delay: 1200, progress: 100, text: 'Dashboard ready!' }
+    ];
+
+    loadingSteps.forEach((step, index) => {
+      setTimeout(() => {
+        setProgress(step.progress);
+        if (index === loadingSteps.length - 1) {
+          setTimeout(() => {
+            setIsLoading(false);
+            setContentLoaded(true);
+          }, 300);
+        }
+      }, step.delay);
+    });
   }, []);
 
   if (isLoading) {
-    return <ModernLoader variant="market" text="Loading Trading Dashboard..." fullScreen />;
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-secondary-900 via-secondary-800 to-secondary-900 z-50 flex flex-col items-center justify-center">
+        <AnimatedBackground variant="particles" />
+        <div className="relative z-10 text-center space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4"
+          >
+            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-500/25">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold text-white">TurtleTrading</h1>
+            <p className="text-secondary-300">AI-Powered Trading Platform</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="w-80 mx-auto space-y-4"
+          >
+            <ProgressBar
+              value={progress}
+              variant="gradient"
+              animated
+              striped
+              className="mb-4"
+            />
+            <ModernLoader variant="market" text="Loading Trading Dashboard..." />
+          </motion.div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -130,33 +184,81 @@ const Dashboard: React.FC = () => {
         </motion.div>
       </motion.div>
 
-      {/* Floating Action Button */}
+      {/* Enhanced Floating Action Button */}
       <AnimatePresence>
-        <motion.button
-          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full shadow-lg shadow-primary-500/25 flex items-center justify-center text-white hover:shadow-xl hover:shadow-primary-500/40 z-50"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+        <motion.div
+          className="fixed bottom-6 right-6 z-50"
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1 }}
-          onClick={() => setEditMode(!editMode)}
-          title={editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
         >
-          <motion.svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            animate={{ rotate: editMode ? 45 : 0 }}
-            transition={{ duration: 0.2 }}
+          <Button
+            variant="gradient"
+            size="lg"
+            glow
+            onClick={() => setEditMode(!editMode)}
+            className="w-16 h-16 rounded-full !p-0 shadow-2xl"
+            title={editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
           >
-            {editMode ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <motion.svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              animate={{ rotate: editMode ? 45 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {editMode ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              )}
+            </motion.svg>
+          </Button>
+
+          {/* Quick Action Menu */}
+          <AnimatePresence>
+            {editMode && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0, y: 20 }}
+                className="absolute bottom-20 right-0 space-y-3"
+              >
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="w-12 h-12 rounded-full !p-0"
+                  title="Add Widget"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-12 h-12 rounded-full !p-0"
+                  title="Customize Layout"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </Button>
+                <Button
+                  variant="success"
+                  size="sm"
+                  className="w-12 h-12 rounded-full !p-0"
+                  title="Save Layout"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </Button>
+              </motion.div>
             )}
-          </motion.svg>
-        </motion.button>
+          </AnimatePresence>
+        </motion.div>
       </AnimatePresence>
     </div>
   );
