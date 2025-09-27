@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "turtletrading-frontend",
   "alias": ["turtletrading.vercel.app"],
   "build": {
     "env": {
