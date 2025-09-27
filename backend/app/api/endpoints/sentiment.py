@@ -14,8 +14,8 @@ import redis.asyncio as aioredis
 from app.models.sentiment_ner_models import (
     SentimentQueryRequest, SentimentQueryResponse, SentimentAggregation,
     ProcessedContent, RawContent, NamedEntity, SentimentScore, SentimentPolarity,
-    EntityType, ProviderType, ContentType, IngestionRequest, IngestionResponse
-    # NERAnalysisRequest, NERAnalysisResponse  # Temporarily disabled
+    EntityType, ProviderType, ContentType, IngestionRequest, IngestionResponse,
+    NERAnalysisRequest, NERAnalysisResponse
 )
 from app.services.sentiment_aggregation_service import SentimentAggregationService, create_sentiment_aggregation_service
 from app.services.nlp_pipeline_service import NLPPipelineService, create_nlp_pipeline_service

@@ -465,6 +465,24 @@ class NLPPipelineConfig(BaseModel):
     max_processing_time: float = Field(30.0, description="Maximum processing time per item")
 
 
+class NERAnalysisRequest(BaseModel):
+    """Request for NER analysis on text"""
+    text: str = Field(..., description="Text to analyze for named entities")
+    model_id: Optional[str] = Field(None, description="Specific NER model to use")
+    include_ticker_mapping: bool = Field(True, description="Include ticker symbol mapping")
+    confidence_threshold: float = Field(0.5, description="Minimum confidence threshold")
+    max_entities: Optional[int] = Field(None, description="Maximum entities to return")
+
+
+class NERAnalysisResponse(BaseModel):
+    """Response for NER analysis"""
+    entities: List[NamedEntity] = Field(..., description="Extracted named entities")
+    processing_time: float = Field(..., description="Processing time in seconds")
+    model_used: str = Field(..., description="NER model used")
+    total_entities: int = Field(..., description="Total entities extracted")
+    ticker_entities: int = Field(..., description="Ticker-related entities found")
+
+
 if __name__ == "__main__":
     # Example usage and validation
     print("Sentiment Ingestion & NER Models loaded successfully")

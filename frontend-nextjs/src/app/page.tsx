@@ -9,9 +9,10 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirect to dashboard after a brief loading animation
+    // Check authentication status and redirect appropriately
     const timer = setTimeout(() => {
-      router.push('/dashboard')
+      // Let middleware handle authentication and routing
+      router.push('/login')
     }, 2000)
 
     return () => clearTimeout(timer)
