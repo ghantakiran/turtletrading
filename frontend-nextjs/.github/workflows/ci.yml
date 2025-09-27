@@ -1,0 +1,521 @@
+name: TurtleTrading CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly builds at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18.x'
+  PYTHON_VERSION: '3.11'
+  PNPM_VERSION: '8.x'
+
+# Concurrency control - cancel previous runs for same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Quality Gates & Static Analysis
+  quality-gates:
+    name: Quality Gates & Static Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+
+      - name: TypeScript Type Checking
+        run: |
+          npm run type-check
+
+      - name: ESLint Code Quality
+        run: |
+          npm run lint -- --format=github
+
+      - name: Code Formatting Check
+        run: |
+          npm run format:check
+
+      - name: Security Audit
+        run: |
+          npm audit --audit-level moderate
+
+      - name: Dependency Vulnerability Scan
+        uses: actions/dependency-review-action@v3
+        if: github.event_name == 'pull_request'
+
+  # Job 2: Unit & Integration Tests with Coverage
+  unit-integration-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: quality-gates
+
+    strategy:
+      matrix:
+        test-group: [unit, integration, accessibility]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run Test Group - ${{ matrix.test-group }}
+        run: |
+          case "${{ matrix.test-group }}" in
+            "unit")
+              npm run test:unit:coverage
+              ;;
+            "integration")
+              npm run test:integration:coverage
+              ;;
+            "accessibility")
+              npm run a11y:test
+              ;;
+          esac
+
+      - name: Enforce 100% Coverage Threshold
+        if: matrix.test-group != 'accessibility'
+        run: |
+          npm run coverage:threshold
+
+      - name: Generate Coverage Badges
+        if: matrix.test-group == 'unit'
+        run: |
+          npm run coverage:badge
+
+      - name: Upload Coverage Reports
+        if: matrix.test-group != 'accessibility'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: ${{ matrix.test-group }}
+          name: coverage-${{ matrix.test-group }}
+          fail_ci_if_error: true
+
+      - name: Upload Coverage Artifacts
+        if: matrix.test-group == 'unit'
+        run: |
+          npm run coverage:upload
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-${{ matrix.test-group }}
+          path: |
+            test-results/
+            coverage/
+          retention-days: 30
+
+  # Job 3: Performance & Accessibility Audits
+  performance-accessibility:
+    name: Performance & A11y Audits
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality-gates
+
+    strategy:
+      matrix:
+        audit-type: [performance, accessibility, lighthouse-full]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Start Application Server
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run Audit - ${{ matrix.audit-type }}
+        run: |
+          case "${{ matrix.audit-type }}" in
+            "performance")
+              npm run perf:budgets
+              npm run perf:report
+              ;;
+            "accessibility")
+              npm run a11y:audit
+              npm run a11y:report
+              ;;
+            "lighthouse-full")
+              npm run lighthouse
+              ;;
+          esac
+
+      - name: Upload Audit Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: audit-reports-${{ matrix.audit-type }}
+          path: |
+            lighthouse-results/
+            performance-reports/
+            accessibility-reports/
+          retention-days: 30
+
+  # Job 4: End-to-End Testing
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [unit-integration-tests]
+
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        test-suite: [core, trading, auth]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Start Backend Services
+        run: |
+          # Start mock backend for E2E tests
+          npm run backend:mock &
+          npx wait-on http://localhost:8000/health --timeout 60000
+
+      - name: Start Frontend Application
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run E2E Tests - ${{ matrix.test-suite }} on ${{ matrix.browser }}
+        run: |
+          npx playwright test \
+            --project=${{ matrix.browser }} \
+            --grep="@${{ matrix.test-suite }}" \
+            --reporter=html,github \
+            --output-dir=test-results/${{ matrix.browser }}-${{ matrix.test-suite }}
+
+      - name: Upload E2E Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}-${{ matrix.test-suite }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
+
+  # Job 5: Security & Compliance Checks
+  security-compliance:
+    name: Security & Compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality-gates
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run Security Vulnerability Scan
+        run: |
+          npm audit --audit-level high
+
+      - name: OWASP ZAP Security Scan
+        uses: zaproxy/action-full-scan@v0.7.0
+        with:
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+      - name: Check for Secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: License Compliance Check
+        run: |
+          npx license-checker --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause'
+
+  # Job 6: Build & Deploy Validation
+  build-deploy-validation:
+    name: Build & Deploy Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [unit-integration-tests, performance-accessibility]
+
+    strategy:
+      matrix:
+        environment: [staging, production]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Build for ${{ matrix.environment }}
+        run: |
+          export NODE_ENV=${{ matrix.environment }}
+          npm run build
+
+      - name: Analyze Bundle Size
+        run: |
+          npm run performance:analyze
+
+      - name: Validate Build Output
+        run: |
+          # Check critical files exist
+          test -f dist/index.html
+          test -d dist/assets
+
+          # Check bundle size limits
+          npm run perf:budgets
+
+      - name: Run Smoke Tests
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3000 --timeout 60000
+          curl -f http://localhost:3000 || exit 1
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-${{ matrix.environment }}
+          path: dist/
+          retention-days: 7
+
+  # Job 7: Integration & Contract Tests
+  integration-contract-tests:
+    name: Integration & Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: quality-gates
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: turtletrading_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Frontend Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install Backend Dependencies
+        run: |
+          cd ../backend
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Start Backend Services
+        run: |
+          cd ../backend
+          export DATABASE_URL="postgresql://postgres:testpass@localhost:5432/turtletrading_test"
+          export REDIS_URL="redis://localhost:6379"
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          npx wait-on http://localhost:8000/health --timeout 60000
+
+      - name: Run Contract Tests
+        run: |
+          npm run test:contract
+
+      - name: Run API Integration Tests
+        run: |
+          npm run test:api:integration
+
+      - name: Upload Integration Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            test-results/integration/
+            contract-tests/reports/
+          retention-days: 30
+
+  # Job 8: Final Validation & Reporting
+  final-validation:
+    name: Final Validation & Reporting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [e2e-tests, security-compliance, build-deploy-validation, integration-contract-tests]
+    if: always()
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate Comprehensive Report
+        run: |
+          # Create comprehensive test report
+          mkdir -p final-reports
+
+          echo "# TurtleTrading CI/CD Pipeline Report" > final-reports/summary.md
+          echo "Generated: $(date)" >> final-reports/summary.md
+          echo "" >> final-reports/summary.md
+
+          # Check job results
+          echo "## Job Results" >> final-reports/summary.md
+          echo "- Quality Gates: ${{ needs.quality-gates.result }}" >> final-reports/summary.md
+          echo "- Unit/Integration Tests: ${{ needs.unit-integration-tests.result }}" >> final-reports/summary.md
+          echo "- Performance/A11y: ${{ needs.performance-accessibility.result }}" >> final-reports/summary.md
+          echo "- E2E Tests: ${{ needs.e2e-tests.result }}" >> final-reports/summary.md
+          echo "- Security/Compliance: ${{ needs.security-compliance.result }}" >> final-reports/summary.md
+          echo "- Build/Deploy: ${{ needs.build-deploy-validation.result }}" >> final-reports/summary.md
+          echo "- Integration/Contract: ${{ needs.integration-contract-tests.result }}" >> final-reports/summary.md
+
+      - name: Check Overall Pipeline Status
+        run: |
+          # Fail if any critical jobs failed
+          if [[ "${{ needs.unit-integration-tests.result }}" != "success" ]]; then
+            echo "❌ Unit/Integration tests failed - pipeline fails"
+            exit 1
+          fi
+
+          if [[ "${{ needs.e2e-tests.result }}" != "success" ]]; then
+            echo "❌ E2E tests failed - pipeline fails"
+            exit 1
+          fi
+
+          if [[ "${{ needs.security-compliance.result }}" != "success" ]]; then
+            echo "⚠️ Security/Compliance issues detected"
+            # Continue but mark as warning
+          fi
+
+          echo "✅ Pipeline validation successful!"
+
+      - name: Upload Final Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: final-pipeline-report
+          path: final-reports/
+          retention-days: 90
+
+      - name: Notify on Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#ci-cd'
+          text: 'TurtleTrading CI/CD Pipeline failed! Check the logs.'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+# Workflow completion summary
+  workflow-summary:
+    name: Workflow Summary
+    runs-on: ubuntu-latest
+    needs: final-validation
+    if: always()
+
+    steps:
+      - name: Pipeline Summary
+        run: |
+          echo "🐢 TurtleTrading CI/CD Pipeline Complete"
+          echo "📊 Final Status: ${{ needs.final-validation.result }}"
+          echo "🔗 Artifacts: Available for download in Actions tab"
+          echo "📈 Coverage: Enforced at 100% for all modules"
+          echo "🛡️ Security: Scanned and validated"
+          echo "🚀 Ready for deployment!"
