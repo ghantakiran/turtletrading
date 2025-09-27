@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
+// import { Checkbox } from '@/components/ui/checkbox' // TEMP: Commented out due to import issue
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react'
 import { loginAction } from '@/lib/auth/actions'
@@ -104,11 +104,13 @@ export function LoginForm() {
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Checkbox
+            <input
+              type="checkbox"
               id="remember"
               checked={rememberMe}
-              onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+              onChange={(e) => setRememberMe(e.target.checked)}
               disabled={isPending}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
             <Label htmlFor="remember" className="text-sm font-normal">
               Remember me

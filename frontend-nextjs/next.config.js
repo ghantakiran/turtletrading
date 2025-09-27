@@ -4,21 +4,17 @@ const budgetConfig = require('./performance-budget.config.js')
 
 const nextConfig = {
   // Performance optimizations
-  experimental: {
-    // Enable modern bundling features
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
-    // Performance monitoring
-    instrumentationHook: true,
-    // WebAssembly support for trading calculations
-    serverComponentsExternalPackages: ['talib'],
   },
+
+  // Server external packages for trading calculations
+  serverExternalPackages: ['talib'],
 
   // Bundle analyzer in development
   ...(process.env.ANALYZE === 'true' && {

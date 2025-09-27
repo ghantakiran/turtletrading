@@ -14,6 +14,7 @@ const PROTECTED_ROUTES = [
   '/portfolio',
   '/alerts',
   '/settings',
+  '/watchlist',
   '/api/protected'
 ];
 

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
+// import { Checkbox } from '@/components/ui/checkbox' // TEMP: Commented out due to import issue
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, UserPlus, Loader2 } from 'lucide-react'
 import { registerAction } from '@/lib/auth/actions'
@@ -178,12 +178,13 @@ export function RegisterForm() {
         </div>
 
         <div className="flex items-start space-x-2">
-          <Checkbox
+          <input
+            type="checkbox"
             id="terms"
             checked={acceptTerms}
-            onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
             disabled={isPending}
-            className="mt-1"
+            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
           />
           <Label htmlFor="terms" className="text-sm font-normal leading-5">
             I agree to the{' '}
