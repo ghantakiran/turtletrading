@@ -193,6 +193,10 @@ async function authenticateUser(email: string, password: string) {
 const handler = NextAuth({
   trustHost: true, // Allow NextAuth to infer the URL from the request
   secret: process.env.NEXTAUTH_SECRET || 'development-secret-key-change-in-production',
+  // Explicit URL configuration for Vercel
+  ...(process.env.NEXTAUTH_URL && {
+    url: process.env.NEXTAUTH_URL,
+  }),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -306,10 +310,31 @@ const handler = NextAuth({
       return true;
     },
     async redirect({ url, baseUrl }) {
-      // Redirect to dashboard after successful login
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
-      return `${baseUrl}/dashboard`;
+      // Enhanced redirect logic for Vercel deployment
+      try {
+        // Use environment NEXTAUTH_URL if available, fallback to baseUrl
+        const siteUrl = process.env.NEXTAUTH_URL || baseUrl;
+
+        // Handle relative URLs
+        if (url.startsWith('/')) {
+          return `${siteUrl}${url}`;
+        }
+
+        // Handle absolute URLs - check if they match our domain
+        const urlObj = new URL(url);
+        const siteUrlObj = new URL(siteUrl);
+
+        if (urlObj.hostname === siteUrlObj.hostname) {
+          return url;
+        }
+
+        // Default redirect to dashboard
+        return `${siteUrl}/dashboard`;
+      } catch (error) {
+        console.error('Redirect callback error:', error);
+        // Fallback to dashboard
+        return `${baseUrl}/dashboard`;
+      }
     },
   },
   events: {
