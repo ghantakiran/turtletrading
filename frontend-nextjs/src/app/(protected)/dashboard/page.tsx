@@ -1,4 +1,7 @@
 import { Metadata } from 'next'
+
+// Force dynamic rendering for authentication-protected routes
+export const dynamic = 'force-dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react'

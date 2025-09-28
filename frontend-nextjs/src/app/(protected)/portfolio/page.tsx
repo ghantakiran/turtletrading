@@ -1,4 +1,7 @@
 import { Suspense } from 'react'
+
+// Force dynamic rendering for authentication-protected routes
+export const dynamic = 'force-dynamic'
 import { Metadata } from 'next'
 import { getPortfolioData, getMockPortfolioData } from '@/lib/api/portfolio-data'
 import { PortfolioClient } from './PortfolioClient'

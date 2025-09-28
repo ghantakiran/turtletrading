@@ -1,4 +1,7 @@
 import { Metadata } from 'next'
+
+// Force dynamic rendering for authentication-protected routes
+export const dynamic = 'force-dynamic'
 import { cache } from 'react'
 import { Suspense } from 'react'
 import { SentimentClient } from './SentimentClient'

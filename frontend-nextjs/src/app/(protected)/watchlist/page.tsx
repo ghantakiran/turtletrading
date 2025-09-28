@@ -1,4 +1,7 @@
 import { Suspense } from 'react'
+
+// Force dynamic rendering for authentication-protected routes
+export const dynamic = 'force-dynamic'
 import { Metadata } from 'next'
 import { getWatchlistsData, getMockWatchlistsData } from '@/lib/api/watchlist-data'
 import { WatchlistClient } from './WatchlistClient'

@@ -4,6 +4,9 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AlertsClient } from './AlertsClient'
 import { getAlertsData, getMockAlertsData } from '@/lib/api/alerts-data'
 
+// Force dynamic rendering for authentication-protected routes
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Alerts - TurtleTrading Pro',
   description: 'Advanced alert builder and notification center with multi-condition alerts, drag thresholds, and comprehensive tracking',
