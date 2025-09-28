@@ -191,6 +191,7 @@ async function authenticateUser(email: string, password: string) {
 }
 
 const handler = NextAuth({
+  trustHost: true, // Allow NextAuth to infer the URL from the request
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
