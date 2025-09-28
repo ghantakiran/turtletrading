@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
+import { getToken } from 'next-auth/jwt';
 
 // Environment configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
 
 // Protected routes that require authentication
@@ -33,36 +32,28 @@ const ADMIN_ROUTES = [
 ];
 
 interface TokenPayload {
-  user_id: string;
-  email: string;
-  role: 'user' | 'admin' | 'pro';
-  subscription: 'free' | 'pro' | 'enterprise';
-  exp: number;
+  id?: string;
+  email?: string;
+  role?: 'user' | 'admin' | 'pro';
+  subscription?: 'free' | 'pro' | 'enterprise';
+  isVerified?: boolean;
+  exp?: number;
+  iat?: number;
+  jti?: string;
 }
 
-// JWT validation utility
-async function verifyJWT(token: string): Promise<TokenPayload | null> {
+// Get NextAuth token from request
+async function getNextAuthToken(request: NextRequest): Promise<TokenPayload | null> {
   try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    return payload as TokenPayload;
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+    return token as TokenPayload;
   } catch (error) {
-    console.error('JWT verification failed:', error);
+    console.error('NextAuth token verification failed:', error);
     return null;
   }
-}
-
-// Get token from request (cookie or Authorization header)
-function getTokenFromRequest(request: NextRequest): string | null {
-  // Check Authorization header first
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.substring(7);
-  }
-
-  // Check cookie
-  const tokenCookie = request.cookies.get('auth-token');
-  return tokenCookie?.value || null;
 }
 
 // Check if path matches protected routes
@@ -89,8 +80,8 @@ function isAdminRoute(pathname: string): boolean {
 // Rate limiting configuration
 const RATE_LIMIT_CONFIG = {
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 100, // per window
-  adminMaxRequests: 200, // higher limit for admins
+  maxRequests: 1000, // per window (increased for development)
+  adminMaxRequests: 2000, // higher limit for admins
 };
 
 // Simple in-memory rate limiting (for production, use Redis)
@@ -133,21 +124,8 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Get authentication token
-    const token = getTokenFromRequest(request);
-    let user: TokenPayload | null = null;
-
-    // Verify JWT if token exists
-    if (token) {
-      user = await verifyJWT(token);
-
-      // If token is invalid, clear it
-      if (!user) {
-        const response = NextResponse.redirect(new URL('/login', request.url));
-        response.cookies.delete('auth-token');
-        return response;
-      }
-    }
+    // Get NextAuth token
+    const user = await getNextAuthToken(request);
 
     // Rate limiting check
     if (!checkRateLimit(ip, user?.role === 'admin')) {
@@ -202,10 +180,10 @@ export async function middleware(request: NextRequest) {
     const response = NextResponse.next();
 
     if (user) {
-      response.headers.set('x-user-id', user.user_id);
-      response.headers.set('x-user-email', user.email);
-      response.headers.set('x-user-role', user.role);
-      response.headers.set('x-user-subscription', user.subscription);
+      if (user.id) response.headers.set('x-user-id', user.id);
+      if (user.email) response.headers.set('x-user-email', user.email);
+      if (user.role) response.headers.set('x-user-role', user.role);
+      if (user.subscription) response.headers.set('x-user-subscription', user.subscription);
     }
 
     // Security headers
