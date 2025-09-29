@@ -64,7 +64,7 @@ const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await fetch('http://localhost:8000/api/v1/auth/login', {
+          const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -74,12 +74,22 @@ const useAuthStore = create<AuthState>()(
             throw new Error('Invalid credentials');
           }
 
-          const data: LoginResponse = await response.json();
+          const data = await response.json();
 
           set({
-            user: data.user,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
+            user: {
+              id: data.user.id,
+              email: data.user.email,
+              firstName: data.user.firstName,
+              lastName: data.user.lastName,
+              role: data.user.role,
+              isVerified: true,
+              subscription: data.user.subscription,
+              createdAt: new Date().toISOString(),
+              lastLoginAt: new Date().toISOString()
+            },
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
             isAuthenticated: true,
             isLoading: false,
             error: null
@@ -119,7 +129,7 @@ const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await fetch('http://localhost:8000/api/v1/auth/register', {
+          const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -127,15 +137,25 @@ const useAuthStore = create<AuthState>()(
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.detail || 'Registration failed');
+            throw new Error(errorData.error || 'Registration failed');
           }
 
-          const responseData: LoginResponse = await response.json();
+          const responseData = await response.json();
 
           set({
-            user: responseData.user,
-            accessToken: responseData.accessToken,
-            refreshToken: responseData.refreshToken,
+            user: {
+              id: responseData.user.id,
+              email: responseData.user.email,
+              firstName: responseData.user.firstName,
+              lastName: responseData.user.lastName,
+              role: responseData.user.role,
+              isVerified: true,
+              subscription: responseData.user.subscription,
+              createdAt: new Date().toISOString(),
+              lastLoginAt: new Date().toISOString()
+            },
+            accessToken: responseData.access_token,
+            refreshToken: responseData.refresh_token,
             isAuthenticated: true,
             isLoading: false,
             error: null
@@ -159,7 +179,7 @@ const useAuthStore = create<AuthState>()(
         }
 
         try {
-          const response = await fetch('http://localhost:8000/api/v1/auth/refresh', {
+          const response = await fetch('/api/auth/refresh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken })
@@ -169,12 +189,22 @@ const useAuthStore = create<AuthState>()(
             throw new Error('Token refresh failed');
           }
 
-          const data: LoginResponse = await response.json();
+          const data = await response.json();
 
           set({
-            user: data.user,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
+            user: {
+              id: data.user.id,
+              email: data.user.email,
+              firstName: data.user.firstName,
+              lastName: data.user.lastName,
+              role: data.user.role,
+              isVerified: true,
+              subscription: data.user.subscription,
+              createdAt: new Date().toISOString(),
+              lastLoginAt: new Date().toISOString()
+            },
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
             isAuthenticated: true,
             error: null
           });

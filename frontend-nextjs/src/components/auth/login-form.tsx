@@ -2,15 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { signIn, getSession } from 'next-auth/react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-// import { Checkbox } from '@/components/ui/checkbox' // TEMP: Commented out due to import issue
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react'
-import { loginAction } from '@/lib/auth/actions'
+import { useAuth } from '@/components/providers/session-provider'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
@@ -21,6 +19,7 @@ export function LoginForm() {
   const [isPending, startTransition] = useTransition()
   const [socialLoading, setSocialLoading] = useState<string | null>(null)
   const router = useRouter()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,36 +32,15 @@ export function LoginForm() {
 
     startTransition(async () => {
       try {
-        // Try NextAuth credentials provider first
-        const result = await signIn('credentials', {
-          email,
-          password,
-          redirect: false,
-        })
+        const success = await login(email, password)
 
-        if (result?.error) {
-          setError(result.error)
-        } else if (result?.ok) {
-          // Check session to ensure user is authenticated
-          const session = await getSession()
-          if (session) {
-            router.push('/dashboard')
-          } else {
-            setError('Authentication failed')
-          }
+        if (success) {
+          router.push('/dashboard')
+        } else {
+          setError('Invalid email or password')
         }
       } catch (err) {
-        // Fallback to the existing auth action if NextAuth fails
-        try {
-          const fallbackResult = await loginAction({ email, password, rememberMe })
-          if (fallbackResult.success && fallbackResult.user) {
-            router.push('/dashboard')
-          } else {
-            setError(fallbackResult.error || 'Login failed')
-          }
-        } catch (fallbackErr) {
-          setError('An unexpected error occurred')
-        }
+        setError('An unexpected error occurred')
       }
     })
   }
@@ -71,22 +49,10 @@ export function LoginForm() {
     setSocialLoading(provider)
     setError('')
 
-    try {
-      const result = await signIn(provider, {
-        callbackUrl: '/dashboard',
-        redirect: false,
-      })
-
-      if (result?.error) {
-        setError(`${provider} login failed: ${result.error}`)
-      } else if (result?.ok) {
-        router.push('/dashboard')
-      }
-    } catch (err) {
-      setError(`Failed to login with ${provider}`)
-    } finally {
-      setSocialLoading(null)
-    }
+    // TODO: Implement OAuth with direct provider APIs
+    // For now, show a message that social login is not yet implemented
+    setError(`${provider} login will be implemented in the next phase`)
+    setSocialLoading(null)
   }
 
   return (
@@ -273,8 +239,8 @@ export function LoginForm() {
         <div className="mt-4 p-3 bg-muted rounded-lg">
           <p className="text-xs text-muted-foreground text-center">
             <strong>Demo Credentials:</strong><br />
-            Admin: admin@turtletrading.com / admin123<br />
-            User: user@turtletrading.com / user123
+            Admin: admin@turtletrading.com / Admin123!<br />
+            User: user@turtletrading.com / User123!
           </p>
         </div>
       </div>

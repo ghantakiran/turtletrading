@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 
 // Environment configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -42,16 +41,51 @@ interface TokenPayload {
   jti?: string;
 }
 
-// Get NextAuth token from request
-async function getNextAuthToken(request: NextRequest): Promise<TokenPayload | null> {
+// Get JWT token from request headers or cookies
+async function getJWTToken(request: NextRequest): Promise<TokenPayload | null> {
   try {
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
+    // First try Authorization header
+    let token = null;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+
+    // If no header, try cookies (for browser requests)
+    if (!token) {
+      const cookieToken = request.cookies.get('auth_token')?.value;
+      if (cookieToken) {
+        token = cookieToken;
+      }
+    }
+
+    if (!token) {
+      return null;
+    }
+
+    // Verify token with backend
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000'}/api/v1/auth/verify-token`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     });
-    return token as TokenPayload;
+
+    if (response.ok) {
+      const userData = await response.json();
+      return {
+        id: userData.id,
+        email: userData.email,
+        role: userData.role as 'user' | 'admin' | 'pro',
+        subscription: userData.subscription as 'free' | 'pro' | 'enterprise',
+        isVerified: userData.isVerified,
+      } as TokenPayload;
+    }
+
+    return null;
   } catch (error) {
-    console.error('NextAuth token verification failed:', error);
+    console.error('JWT token verification failed:', error);
     return null;
   }
 }
@@ -124,8 +158,8 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Get NextAuth token
-    const user = await getNextAuthToken(request);
+    // Get JWT token
+    const user = await getJWTToken(request);
 
     // Rate limiting check
     if (!checkRateLimit(ip, user?.role === 'admin')) {
