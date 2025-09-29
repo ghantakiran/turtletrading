@@ -1,6 +1,4 @@
 import { Metadata } from 'next'
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/actions'
 import { AppShell } from '@/components/layout/app-shell'
 import { ErrorBoundary } from '@/components/error-boundary'
 
@@ -17,15 +15,22 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await getSession()
-
-  if (!session) {
-    redirect('/login')
+  // Authentication temporarily disabled for core app testing
+  const mockUser = {
+    id: '1',
+    email: 'demo@turtletrading.com',
+    firstName: 'Demo',
+    lastName: 'User',
+    role: 'user' as const,
+    subscription: 'free' as const,
+    isVerified: true,
+    createdAt: new Date().toISOString(),
+    lastLoginAt: new Date().toISOString(),
   }
 
   return (
     <ErrorBoundary level="page">
-      <AppShell user={session}>
+      <AppShell user={mockUser}>
         {children}
       </AppShell>
     </ErrorBoundary>
