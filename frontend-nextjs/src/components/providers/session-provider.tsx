@@ -32,17 +32,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     checkAuthStatus()
+  }, [])
 
-    // Set up automatic token refresh
+  // Set up automatic token refresh in a separate useEffect
+  useEffect(() => {
+    if (!user) return
+
     const refreshInterval = setInterval(() => {
       const token = localStorage.getItem('auth_token')
-      if (token && user) {
+      if (token) {
         refreshToken()
       }
     }, 14 * 60 * 1000) // Refresh every 14 minutes (tokens expire in 15 minutes)
 
     return () => clearInterval(refreshInterval)
-  }, [user])
+  }, [user?.id]) // Only re-run when user ID changes (login/logout)
 
   const checkAuthStatus = async () => {
     try {
