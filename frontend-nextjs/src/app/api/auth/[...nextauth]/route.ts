@@ -6,6 +6,10 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { JWT } from 'next-auth/jwt'
 import { User as NextAuthUser, Session } from 'next-auth'
 
+// Force Node.js runtime to avoid Vercel Edge runtime DNS issues
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 // Extend NextAuth types to include our custom user properties
 declare module 'next-auth' {
   interface User {
