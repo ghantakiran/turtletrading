@@ -35,7 +35,8 @@ export function LoginForm() {
         const success = await login(email, password)
 
         if (success) {
-          router.push('/dashboard')
+          // Use window.location instead of router.push to force navigation
+          window.location.href = '/dashboard'
         } else {
           setError('Invalid email or password')
         }

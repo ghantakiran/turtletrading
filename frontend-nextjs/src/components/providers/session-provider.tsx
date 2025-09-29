@@ -90,8 +90,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         const data = await response.json()
+
         localStorage.setItem('auth_token', data.access_token)
         localStorage.setItem('refresh_token', data.refresh_token)
+
+        // Also set as cookies for middleware access
+        document.cookie = `auth_token=${data.access_token}; path=/; max-age=86400; SameSite=Lax`
+        document.cookie = `refresh_token=${data.refresh_token}; path=/; max-age=604800; SameSite=Lax`
+
         setUser(data.user)
         return true
       }
@@ -118,6 +124,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('refresh_token')
+
+      // Also clear cookies
+      document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+
       setUser(null)
     }
   }
