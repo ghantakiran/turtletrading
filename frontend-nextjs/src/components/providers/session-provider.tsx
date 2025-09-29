@@ -1,40 +1,43 @@
 'use client'
 
-import { SessionProvider as NextAuthSessionProvider, useSession, signIn, signOut } from 'next-auth/react'
 import { ReactNode } from 'react'
+import { useAuthStore } from '@/stores'
 
 interface SessionProviderProps {
   children: ReactNode
 }
 
 export function SessionProvider({ children }: SessionProviderProps) {
-  return (
-    <NextAuthSessionProvider>
-      {children}
-    </NextAuthSessionProvider>
-  )
+  // Authentication is disabled - just pass through children
+  return <>{children}</>
 }
 
-// Export NextAuth hooks for authentication
-export { useSession, signIn, signOut } from 'next-auth/react'
+// Disabled authentication hooks for compatibility
+export function useSession() {
+  return {
+    data: null,
+    status: 'unauthenticated' as const
+  }
+}
+
+export function signIn() {
+  console.log('Authentication is temporarily disabled')
+}
+
+export function signOut() {
+  console.log('Authentication is temporarily disabled')
+}
 
 // Create compatibility hook for existing code
 export function useAuth() {
-  const { data: session, status } = useSession()
+  const authStore = useAuthStore()
 
   return {
-    user: session?.user || null,
-    isAuthenticated: !!session,
-    isLoading: status === 'loading',
-    login: async (email: string, password: string) => {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false
-      })
-      return !!result && !result.error
-    },
-    logout: () => signOut({ callbackUrl: '/login' }),
-    refreshToken: async () => true // NextAuth handles this automatically
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    login: authStore.login,
+    logout: authStore.logout,
+    refreshToken: async () => true
   }
 }
