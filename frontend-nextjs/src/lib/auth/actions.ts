@@ -113,37 +113,10 @@ export async function verifyJWT(token: string): Promise<any> {
   }
 }
 
-// Session management
+// Session management - DISABLED FOR CORE APP TESTING
 export async function getSession(): Promise<User | null> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
-
-    if (!token) {
-      return null;
-    }
-
-    const payload = await verifyJWT(token);
-    if (!payload || !payload.user_id) {
-      return null;
-    }
-
-    // Return user data from token
-    return {
-      id: payload.user_id,
-      email: payload.email,
-      firstName: payload.firstName || '',
-      lastName: payload.lastName || '',
-      role: payload.role || 'user',
-      subscription: payload.subscription || 'free',
-      isVerified: payload.isVerified || false,
-      createdAt: payload.createdAt || new Date().toISOString(),
-      lastLoginAt: payload.lastLoginAt,
-    };
-  } catch (error) {
-    console.error('Session retrieval failed:', error);
-    return null;
-  }
+  // Authentication is temporarily disabled for core app testing
+  return null;
 }
 
 export async function setSession(user: User, accessToken: string, refreshToken: string) {
