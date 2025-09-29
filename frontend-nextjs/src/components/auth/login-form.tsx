@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react'
-import { useAuth } from '@/components/providers/session-provider'
+import { signIn } from 'next-auth/react'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
@@ -19,7 +19,6 @@ export function LoginForm() {
   const [isPending, startTransition] = useTransition()
   const [socialLoading, setSocialLoading] = useState<string | null>(null)
   const router = useRouter()
-  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,14 +31,17 @@ export function LoginForm() {
 
     startTransition(async () => {
       try {
-        const success = await login(email, password)
+        const result = await signIn('credentials', {
+          email,
+          password,
+          callbackUrl: '/dashboard',
+          redirect: true
+        })
 
-        if (success) {
-          // Use window.location instead of router.push to force navigation
-          window.location.href = '/dashboard'
-        } else {
+        if (result?.error) {
           setError('Invalid email or password')
         }
+        // If successful, NextAuth will handle the redirect automatically
       } catch (err) {
         setError('An unexpected error occurred')
       }
