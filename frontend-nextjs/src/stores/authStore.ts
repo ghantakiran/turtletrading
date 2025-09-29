@@ -51,7 +51,7 @@ export interface LoginResponse {
 const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      // Initial state
+      // Initial state - Authentication disabled
       user: null,
       isAuthenticated: false,
       isLoading: false,
@@ -59,55 +59,24 @@ const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
 
-      // Login action
+      // Disabled login action
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
 
-        try {
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          });
-
-          if (!response.ok) {
-            throw new Error('Invalid credentials');
-          }
-
-          const data = await response.json();
-
+        // Simulate a brief loading state, then show authentication disabled message
+        setTimeout(() => {
           set({
-            user: {
-              id: data.user.id,
-              email: data.user.email,
-              firstName: data.user.firstName,
-              lastName: data.user.lastName,
-              role: data.user.role,
-              isVerified: true,
-              subscription: data.user.subscription,
-              createdAt: new Date().toISOString(),
-              lastLoginAt: new Date().toISOString()
-            },
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Login failed',
+            error: 'Authentication is temporarily disabled for core app testing',
             isLoading: false,
             isAuthenticated: false,
             user: null,
             accessToken: null,
             refreshToken: null
           });
-          throw error;
-        }
+        }, 1000);
       },
 
-      // Logout action
+      // Disabled logout action
       logout: () => {
         set({
           user: null,
@@ -124,104 +93,28 @@ const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Register action
+      // Disabled register action
       register: async (data: RegisterData) => {
         set({ isLoading: true, error: null });
 
-        try {
-          const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Registration failed');
-          }
-
-          const responseData = await response.json();
-
+        // Simulate a brief loading state, then show authentication disabled message
+        setTimeout(() => {
           set({
-            user: {
-              id: responseData.user.id,
-              email: responseData.user.email,
-              firstName: responseData.user.firstName,
-              lastName: responseData.user.lastName,
-              role: responseData.user.role,
-              isVerified: true,
-              subscription: responseData.user.subscription,
-              createdAt: new Date().toISOString(),
-              lastLoginAt: new Date().toISOString()
-            },
-            accessToken: responseData.access_token,
-            refreshToken: responseData.refresh_token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Registration failed',
+            error: 'Registration is temporarily disabled for core app testing',
             isLoading: false
           });
-          throw error;
-        }
+        }, 1000);
       },
 
-      // Refresh authentication
+      // Disabled refresh authentication
       refreshAuth: async () => {
-        const { refreshToken } = get();
-
-        if (!refreshToken) {
-          get().logout();
-          return;
-        }
-
-        try {
-          const response = await fetch('/api/auth/refresh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken })
-          });
-
-          if (!response.ok) {
-            throw new Error('Token refresh failed');
-          }
-
-          const data = await response.json();
-
-          set({
-            user: {
-              id: data.user.id,
-              email: data.user.email,
-              firstName: data.user.firstName,
-              lastName: data.user.lastName,
-              role: data.user.role,
-              isVerified: true,
-              subscription: data.user.subscription,
-              createdAt: new Date().toISOString(),
-              lastLoginAt: new Date().toISOString()
-            },
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
-            isAuthenticated: true,
-            error: null
-          });
-        } catch (error) {
-          get().logout();
-          throw error;
-        }
+        // No-op when authentication is disabled
+        return;
       },
 
       // Update user data
       updateUser: (updates: Partial<User>) => {
-        const { user } = get();
-        if (user) {
-          set({
-            user: { ...user, ...updates }
-          });
-        }
+        // No-op when authentication is disabled
       },
 
       // Clear error
