@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000'
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-here-make-it-secure-in-production'
+)
+
+// Demo users for lookup
+const DEMO_USERS = {
+  '1': {
+    id: '1',
+    email: 'admin@turtletrading.com',
+    firstName: 'Admin',
+    lastName: 'User',
+    role: 'admin',
+    subscription: 'premium',
+  },
+  '2': {
+    id: '2',
+    email: 'user@turtletrading.com',
+    firstName: 'Demo',
+    lastName: 'User',
+    role: 'user',
+    subscription: 'free',
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,42 +38,34 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
 
-    // Call backend user info endpoint
-    const backendResponse = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    try {
+      // Verify JWT token
+      const { payload } = await jwtVerify(token, JWT_SECRET)
 
-    if (!backendResponse.ok) {
-      if (backendResponse.status === 401) {
+      if (!payload.sub || typeof payload.sub !== 'string') {
         return NextResponse.json(
-          { error: 'Invalid or expired token' },
+          { error: 'Invalid token format' },
           { status: 401 }
         )
       }
 
+      // Get user data
+      const user = DEMO_USERS[payload.sub as keyof typeof DEMO_USERS]
+      if (!user) {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        )
+      }
+
+      return NextResponse.json(user, { status: 200 })
+
+    } catch (jwtError) {
       return NextResponse.json(
-        { error: 'Authentication service unavailable' },
-        { status: 503 }
+        { error: 'Invalid or expired token' },
+        { status: 401 }
       )
     }
-
-    const userData = await backendResponse.json()
-
-    // Transform backend response to frontend format
-    const response = {
-      id: userData.id || userData.user_id || '1',
-      email: userData.email,
-      firstName: userData.first_name || userData.firstName || '',
-      lastName: userData.last_name || userData.lastName || '',
-      role: userData.role || 'user',
-      subscription: userData.subscription || 'free',
-    }
-
-    return NextResponse.json(response, { status: 200 })
 
   } catch (error) {
     console.error('User info API error:', error)
