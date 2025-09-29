@@ -1,6 +1,4 @@
 import { Metadata } from 'next'
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/actions'
 import { ErrorBoundary } from '@/components/error-boundary'
 
 export const metadata: Metadata = {
@@ -11,17 +9,12 @@ export const metadata: Metadata = {
   description: 'Sign in to TurtleTrading to access AI-powered stock analysis and trading insights.',
 }
 
-export default async function AuthLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const session = await getSession()
-
-  // If already authenticated, redirect to dashboard
-  if (session) {
-    redirect('/dashboard')
-  }
+  // Authentication disabled - no session checks or redirects
 
   return (
     <ErrorBoundary level="page">
