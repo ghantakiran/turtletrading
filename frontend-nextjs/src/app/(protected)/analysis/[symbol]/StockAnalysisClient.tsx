@@ -117,20 +117,26 @@ export default function StockAnalysisClient({ initialData }: StockAnalysisClient
   const [isInWatchlist, setIsInWatchlist] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // WebSocket integration
-  const {
-    isConnected: wsConnected,
-    connectionStatus,
-    subscribe,
-    unsubscribe
-  } = useStockWebSocket(symbol, {
-    onMessage: (message) => {
-      console.log('WebSocket message received:', message)
-    },
-    onError: (error) => {
-      console.error('WebSocket error:', error)
-    }
-  })
+  // WebSocket integration - temporarily disabled to avoid infinite loop
+  const wsConnected = false
+  const connectionStatus = 'disconnected'
+  const subscribe = () => {}
+  const unsubscribe = () => {}
+
+  // TODO: Re-enable WebSocket after fixing infinite loop issue
+  // const {
+  //   isConnected: wsConnected,
+  //   connectionStatus,
+  //   subscribe,
+  //   unsubscribe
+  // } = useStockWebSocket(symbol, {
+  //   onMessage: (message) => {
+  //     console.log('WebSocket message received:', message)
+  //   },
+  //   onError: (error) => {
+  //     console.error('WebSocket error:', error)
+  //   }
+  // })
 
   // Real-time price updates from WebSocket via Zustand
   useEffect(() => {

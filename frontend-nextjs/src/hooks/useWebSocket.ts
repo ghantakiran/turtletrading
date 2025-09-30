@@ -97,14 +97,25 @@ export function useWebSocket({
   const connectTimeRef = useRef<number>(0)
   const latencyMeasurements = useRef<number[]>([])
 
-  // Zustand store actions
-  const {
-    updateStockPrice,
-    updateConnectionStatus,
-    setConnectionStatus,
-    addNotification,
-    isConnected: storeIsConnected
-  } = useMarketStore()
+  // Zustand store actions - use refs to avoid dependency issues
+  const storeActionsRef = useRef({
+    updateStockPrice: useMarketStore.getState().updateStockPrice,
+    updateConnectionStatus: useMarketStore.getState().updateConnectionStatus,
+    setConnectionStatus: useMarketStore.getState().setConnectionStatus,
+    addNotification: useMarketStore.getState().addNotification,
+  })
+
+  // Update refs when store changes
+  useEffect(() => {
+    storeActionsRef.current = {
+      updateStockPrice: useMarketStore.getState().updateStockPrice,
+      updateConnectionStatus: useMarketStore.getState().updateConnectionStatus,
+      setConnectionStatus: useMarketStore.getState().setConnectionStatus,
+      addNotification: useMarketStore.getState().addNotification,
+    }
+  })
+
+  const connectionStatus = useMarketStore(state => state.connectionStatus)
 
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://127.0.0.1:8000/api/v1/websocket'
 
@@ -126,7 +137,7 @@ export function useWebSocket({
         isConnectingRef.current = false
         reconnectCountRef.current = 0
         setConnectionState(ConnectionState.CONNECTED)
-        setConnectionStatus('connected')
+        storeActionsRef.current.setConnectionStatus('connected')
 
         // Update connection metrics
         const connectTime = Date.now()
@@ -317,7 +328,7 @@ export function useWebSocket({
       setConnectionState(ConnectionState.ERROR)
       setConnectionStatus('error')
     }
-  }, [wsUrl, symbols, onMessage, onError, onOpen, onClose, onReconnect, reconnectAttempts, reconnectInterval, reconnectMultiplier, maxReconnectInterval, enableHeartbeat, enableMessageQueue, messageQueueSize, setConnectionStatus, updateStockPrice, updateConnectionStatus, addNotification])
+  }, [wsUrl, symbols, onMessage, onError, onOpen, onClose, onReconnect, reconnectAttempts, reconnectInterval, reconnectMultiplier, maxReconnectInterval, enableHeartbeat, enableMessageQueue, messageQueueSize])
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -332,7 +343,7 @@ export function useWebSocket({
 
     isConnectingRef.current = false
     setConnectionStatus('disconnected')
-  }, [setConnectionStatus])
+  }, [])
 
   // Heartbeat management
   const startHeartbeat = useCallback(() => {
@@ -465,7 +476,7 @@ export function useWebSocket({
     // State
     isConnected,
     connectionState,
-    connectionStatus: useMarketStore.getState().connectionStatus,
+    connectionStatus,
     connectionMetrics,
     lastMessage,
     messageHistory,
