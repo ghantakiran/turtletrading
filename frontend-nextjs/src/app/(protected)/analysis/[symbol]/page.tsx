@@ -7,21 +7,22 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import ErrorBoundary from '@/components/ErrorBoundary'
 
 interface PageProps {
-  params: { symbol: string }
-  searchParams: { [key: string]: string | string[] | undefined }
+  params: Promise<{ symbol: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 // Metadata generation with stock symbol
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const symbol = params.symbol?.toUpperCase()
+  const { symbol } = await params
+  const symbolUpper = symbol?.toUpperCase()
 
   return {
-    title: `${symbol} Stock Analysis - TurtleTrading Pro`,
-    description: `Advanced stock analysis for ${symbol} with AI predictions, technical indicators, and real-time sentiment analysis.`,
+    title: `${symbolUpper} Stock Analysis - TurtleTrading Pro`,
+    description: `Advanced stock analysis for ${symbolUpper} with AI predictions, technical indicators, and real-time sentiment analysis.`,
     openGraph: {
-      title: `${symbol} Stock Analysis`,
-      description: `AI-powered analysis for ${symbol} with technical indicators and predictions`,
-      url: `/analysis/${symbol}`,
+      title: `${symbolUpper} Stock Analysis`,
+      description: `AI-powered analysis for ${symbolUpper} with technical indicators and predictions`,
+      url: `/analysis/${symbolUpper}`,
     },
   }
 }
@@ -107,16 +108,17 @@ function AnalysisLoading({ symbol }: { symbol: string }) {
 
 // Main page component with SSR
 export default async function StockAnalysisPage({ params, searchParams }: PageProps) {
-  const symbol = params.symbol?.toUpperCase()
+  const { symbol } = await params
+  const symbolUpper = symbol?.toUpperCase()
 
-  if (!symbol) {
+  if (!symbolUpper) {
     notFound()
   }
 
   return (
     <ErrorBoundary level="page">
-      <Suspense fallback={<AnalysisLoading symbol={symbol} />}>
-        <StockDataLoader symbol={symbol} />
+      <Suspense fallback={<AnalysisLoading symbol={symbolUpper} />}>
+        <StockDataLoader symbol={symbolUpper} />
       </Suspense>
     </ErrorBoundary>
   )
