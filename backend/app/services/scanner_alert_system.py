@@ -10,8 +10,8 @@ import json
 import smtplib
 from typing import Dict, List, Any, Optional, Set, Callable
 from datetime import datetime, timedelta
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import logging
 import aiohttp
 from dataclasses import dataclass, field
@@ -122,14 +122,14 @@ class EmailAlertSender:
         """Send email alert"""
         try:
             # Create message
-            msg = MimeMultipart()
+            msg = MIMEMultipart()
             msg['From'] = self.username
             msg['To'] = ', '.join(recipients)
             msg['Subject'] = f"Scanner Alert: {alert.scanner_name} - {alert.symbol}"
 
             # Create email body
             body = self._create_email_body(alert)
-            msg.attach(MimeText(body, 'html'))
+            msg.attach(MIMEText(body, 'html'))
 
             # Send email
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:

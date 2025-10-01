@@ -230,7 +230,7 @@ class ScannerResponse(BaseModel):
     scan_timestamp: datetime = Field(..., description="When scan was performed")
 
     # Results
-    results: List[ScanResult] = Field(..., description="Scan results")
+    results: List["ScanResult"] = Field(..., description="Scan results")
     total_matches: int = Field(..., description="Total number of matches")
     total_scanned: int = Field(..., description="Total assets scanned")
 
@@ -455,3 +455,4 @@ class ScanResult(BaseModel):
 # Update FilterGroup model reference
 FilterGroup.model_rebuild()
 AggregatedScanResult.model_rebuild()
+ScannerResponse.model_rebuild()

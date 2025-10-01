@@ -3,7 +3,7 @@ Portfolio Backtester models and data contracts.
 Comprehensive data structures for strategy backtesting, walk-forward optimization, and performance analysis.
 """
 
-from datetime import date, datetime
+from datetime import date as date_type, datetime
 from typing import Dict, List, Optional, Literal, Union, Any
 from pydantic import BaseModel, Field, validator
 from enum import Enum
@@ -110,8 +110,8 @@ class BacktestConfiguration(BaseModel):
     """Complete backtesting configuration."""
     strategy: TradingStrategy = Field(..., description="Trading strategy definition")
     universe: List[str] = Field(..., min_items=1, max_items=1000, description="Stock universe")
-    start_date: date = Field(..., description="Backtest start date")
-    end_date: date = Field(..., description="Backtest end date")
+    start_date: date_type = Field(..., description="Backtest start date")
+    end_date: date_type = Field(..., description="Backtest end date")
     initial_capital: float = Field(100000.0, gt=0, description="Initial portfolio capital")
 
     # Walk-forward optimization
@@ -173,7 +173,7 @@ class Position(BaseModel):
     quantity: int = Field(..., description="Number of shares (negative for short)")
     entry_price: float = Field(..., gt=0, description="Average entry price")
     current_price: float = Field(..., gt=0, description="Current market price")
-    entry_date: date = Field(..., description="Position entry date")
+    entry_date: date_type = Field(..., description="Position entry date")
 
     # Position metrics
     market_value: float = Field(..., description="Current market value")
@@ -189,7 +189,7 @@ class Position(BaseModel):
 
 class PortfolioSnapshot(BaseModel):
     """Portfolio state at a specific date."""
-    date: date = Field(..., description="Snapshot date")
+    date: date_type = Field(..., description="Snapshot date")
     total_value: float = Field(..., gt=0, description="Total portfolio value")
     cash: float = Field(..., ge=0, description="Cash position")
     positions: List[Position] = Field(default_factory=list, description="Current positions")
@@ -252,17 +252,17 @@ class PerformanceMetrics(BaseModel):
     avg_leverage: float = Field(..., ge=0, description="Average leverage")
 
     # Time-based metrics
-    start_date: date = Field(..., description="Backtest start date")
-    end_date: date = Field(..., description="Backtest end date")
+    start_date: date_type = Field(..., description="Backtest start date")
+    end_date: date_type = Field(..., description="Backtest end date")
     trading_days: int = Field(..., gt=0, description="Number of trading days")
 
 
 class WalkForwardResult(BaseModel):
     """Walk-forward optimization result for a single window."""
-    train_start: date = Field(..., description="Training period start date")
-    train_end: date = Field(..., description="Training period end date")
-    test_start: date = Field(..., description="Test period start date")
-    test_end: date = Field(..., description="Test period end date")
+    train_start: date_type = Field(..., description="Training period start date")
+    train_end: date_type = Field(..., description="Training period end date")
+    test_start: date_type = Field(..., description="Test period start date")
+    test_end: date_type = Field(..., description="Test period end date")
 
     # Training metrics
     train_metrics: PerformanceMetrics = Field(..., description="Training period performance")

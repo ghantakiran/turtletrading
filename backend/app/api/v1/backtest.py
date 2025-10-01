@@ -14,7 +14,7 @@ import asyncio
 from ...models.backtester_models import (
     BacktestRequest, BacktestResult, BacktestConfiguration,
     TradingStrategy, PositionSizingMethod, PerformanceMetrics,
-    TransactionCosts, BacktestStatus, WalkForwardConfig
+    TransactionCosts, BacktestStatus, WalkForwardResult
 )
 from ...services.backtesting_service import BacktestingService
 from ...core.dependencies import get_backtesting_service
