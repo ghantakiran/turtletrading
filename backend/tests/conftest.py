@@ -148,10 +148,12 @@ def mock_external_api():
 
 
 @pytest.fixture(autouse=True)
-def setup_test_environment():
-    """Set up test environment variables."""
+def setup_test_environment(monkeypatch):
+    """Set up test environment variables and mock Redis."""
+    from unittest.mock import MagicMock, patch
+
     original_env = os.environ.copy()
-    
+
     # Set test-specific environment variables
     os.environ.update({
         "TESTING": "true",
@@ -159,10 +161,23 @@ def setup_test_environment():
         "SECRET_KEY": "test-secret-key-for-testing-only",
         "REDIS_URL": "redis://localhost:6379/1",  # Use different DB for tests
         "CACHE_TTL": "60",
+        "DISABLE_REDIS": "true",  # Disable Redis for tests
     })
-    
-    yield
-    
+
+    # Mock Redis globally for all tests
+    mock_redis_client = MagicMock()
+    mock_redis_client.ping.return_value = True
+    mock_redis_client.get.return_value = None
+    mock_redis_client.set.return_value = True
+    mock_redis_client.setex.return_value = True
+    mock_redis_client.delete.return_value = 1
+    mock_redis_client.keys.return_value = []
+
+    # Patch Redis at import time
+    with patch('redis.Redis', return_value=mock_redis_client):
+        with patch('redis.from_url', return_value=mock_redis_client):
+            yield
+
     # Restore original environment
     os.environ.clear()
     os.environ.update(original_env)

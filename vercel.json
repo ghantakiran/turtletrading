@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "name": "turtletrading",
+  "builds": [
+    {
+      "src": "backend/app/main.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend-nextjs/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/app/main.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend-nextjs/$1"
+    }
+  ],
+  "env": {
+    "TESTING": "false",
+    "DEBUG": "false"
+  }
+}

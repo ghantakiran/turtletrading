@@ -3,7 +3,7 @@ Main API router that includes all endpoint modules
 """
 
 from fastapi import APIRouter
-from app.api.endpoints import stocks, market, auth, websocket_info
+from app.api.endpoints import stocks, market, auth, websocket_info, search
 # from app.api.endpoints import sentiment  # Temporarily disabled for authentication focus
 from app.api.v1 import options, backtest, scanners, regimes
 
@@ -39,6 +39,11 @@ api_router.include_router(
     websocket_info.router,
     prefix="/ws-info",
     tags=["websocket"]
+)
+
+api_router.include_router(
+    search.router,
+    tags=["search"]
 )
 
 api_router.include_router(
