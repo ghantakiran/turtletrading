@@ -1,7 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: process.env.NODE_ENV === 'development'
+              ? "connect-src 'self' http://localhost:8000 wss: https:;"
+              : "connect-src 'self' wss: https:;"
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

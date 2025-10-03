@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Toaster } from "@/components/ui/sonner";
 import { AppErrorBoundary } from "@/components/error-boundaries";
+import { ConnectionMonitor } from "@/components/connection-monitor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
       >
         <AppErrorBoundary>
+          <ConnectionMonitor />
           <div className="flex flex-col min-h-screen">
             <Header />
             <main className="flex-1">

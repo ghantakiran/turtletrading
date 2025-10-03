@@ -47,6 +47,7 @@ export function Header() {
   const [isAIInsightsOpen, setIsAIInsightsOpen] = useState(false)
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   // Zustand store hooks
   const { isConnected, connectionStatus, marketIndices } = useMarketStore()
@@ -59,8 +60,13 @@ export function Header() {
     stock.toLowerCase().includes(searchQuery.toLowerCase())
   ).slice(0, 5)
 
-  // Market status logic
-  const marketStatus = isConnected ? 'connected' : 'offline'
+  // Prevent hydration mismatch - only show status after client mount
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Market status logic - default to 'connected' to match initial store state
+  const marketStatus = !isMounted ? 'connected' : (isConnected ? 'connected' : 'offline')
   const isMarketOpen = () => {
     const now = new Date()
     const hours = now.getHours()

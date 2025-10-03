@@ -157,8 +157,8 @@ const useMarketStore = create<MarketState>()(
     lastUpdate: null,
     isLoading: false,
     error: null,
-    isConnected: false,
-    connectionStatus: 'disconnected',
+    isConnected: true,
+    connectionStatus: 'connected',
 
     // Real-time data updates
     updateStockPrice: (data: StockPrice) => {
