@@ -26,7 +26,8 @@ import {
   ChevronRight,
   Home,
   Star,
-  BookOpen
+  BookOpen,
+  Newspaper
 } from 'lucide-react'
 import { useMarketStore, useAuthStore, useUIStore } from '@/stores'
 
@@ -35,6 +36,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3, current: false },
   { name: 'Stock Analysis', href: '/analysis/AAPL', icon: TrendingUp, current: false },
   { name: 'AI Analysis', href: '/analysis', icon: Brain, current: false },
+  { name: 'Market News', href: '/news', icon: Newspaper, current: false },
   { name: 'Portfolio', href: '/portfolio', icon: Target, current: false },
   { name: 'Alerts', href: '/alerts', icon: Zap, current: false },
   { name: 'Settings', href: '/settings', icon: Settings, current: false },
