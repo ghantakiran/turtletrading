@@ -18,6 +18,7 @@ import {
 import { Navigation } from './navigation'
 import { AIInsightsModal } from '@/components/ai-insights-modal'
 import { WatchlistModal } from '@/components/watchlist-modal'
+import { NotificationPanel } from '@/components/notification-panel'
 import {
   Activity,
   User,
@@ -45,6 +46,7 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAIInsightsOpen, setIsAIInsightsOpen] = useState(false)
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false)
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
 
   // Zustand store hooks
   const { isConnected, connectionStatus, marketIndices } = useMarketStore()
@@ -264,7 +266,12 @@ export function Header() {
                   Watchlist
                 </Button>
 
-                <Button variant="outline" size="icon" className="relative">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="relative"
+                  onClick={() => setIsNotificationOpen(true)}
+                >
                   <Bell className="h-4 w-4" />
                   {notifications.length > 0 && (
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
@@ -410,6 +417,9 @@ export function Header() {
 
       {/* Watchlist Modal */}
       <WatchlistModal open={isWatchlistOpen} onOpenChange={setIsWatchlistOpen} />
+
+      {/* Notification Panel */}
+      <NotificationPanel open={isNotificationOpen} onOpenChange={setIsNotificationOpen} />
     </>
   )
 }
