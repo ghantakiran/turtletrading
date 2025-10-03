@@ -189,7 +189,7 @@ export function Header() {
             <div className="flex items-center gap-3">
               {/* Market Status & Data */}
               <div className="hidden lg:flex items-center gap-4">
-                {/* Connection Status */}
+                {/* Connection Status - Desktop */}
                 <Badge
                   variant={marketStatus === 'connected' ? 'default' : 'destructive'}
                   className={`gap-2 ${
@@ -197,6 +197,7 @@ export function Header() {
                       ? 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
                       : 'bg-red-500/10 text-red-600 hover:bg-red-500/20'
                   }`}
+                  aria-label={marketStatus === 'connected' ? 'Connected to live market data' : 'Offline - No connection'}
                 >
                   {marketStatus === 'connected' ? (
                     <Wifi className="w-3 h-3" />
@@ -227,6 +228,26 @@ export function Header() {
                     <span className="font-medium">${vixData.value.toFixed(2)}</span>
                   </div>
                 )}
+              </div>
+
+              {/* Connection Status - Mobile/Tablet */}
+              <div className="lg:hidden">
+                <Badge
+                  variant={marketStatus === 'connected' ? 'default' : 'destructive'}
+                  className={`gap-1 text-xs ${
+                    marketStatus === 'connected'
+                      ? 'bg-green-500/10 text-green-600'
+                      : 'bg-red-500/10 text-red-600'
+                  }`}
+                  aria-label={marketStatus === 'connected' ? 'Connected to live market data' : 'Offline - No connection'}
+                >
+                  {marketStatus === 'connected' ? (
+                    <Wifi className="w-3 h-3" />
+                  ) : (
+                    <WifiOff className="w-3 h-3" />
+                  )}
+                  <span className="hidden sm:inline">{marketStatus === 'connected' ? 'Live' : 'Offline'}</span>
+                </Badge>
               </div>
 
               {/* Quick Actions */}
