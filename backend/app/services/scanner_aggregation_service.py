@@ -14,7 +14,7 @@ import statistics
 import logging
 
 from ..models.scanner_models import (
-    ScanResult, ScannerResponse, SavedScanner, ScanFilter,
+    ScanResult, ScannerResponse, SavedScanner,
     AggregatedScanResult, PortfolioAnalysis, ScannerInsight
 )
 

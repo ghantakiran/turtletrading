@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Navigation } from './navigation'
+import { AIInsightsModal } from '@/components/ai-insights-modal'
 import {
   Activity,
   User,
@@ -41,6 +42,7 @@ export function Header() {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isAIInsightsOpen, setIsAIInsightsOpen] = useState(false)
 
   // Zustand store hooks
   const { isConnected, connectionStatus, marketIndices } = useMarketStore()
@@ -245,7 +247,10 @@ export function Header() {
               </div>
 
               {/* AI Insights Button */}
-              <Button className="gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hidden sm:flex">
+              <Button
+                onClick={() => setIsAIInsightsOpen(true)}
+                className="gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hidden sm:flex"
+              >
                 <Zap className="h-4 w-4" />
                 AI Insights
               </Button>
@@ -371,6 +376,9 @@ export function Header() {
           </>
         )}
       </AnimatePresence>
+
+      {/* AI Insights Modal */}
+      <AIInsightsModal open={isAIInsightsOpen} onOpenChange={setIsAIInsightsOpen} />
     </>
   )
 }
