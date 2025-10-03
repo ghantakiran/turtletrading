@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Navigation } from './navigation'
 import { AIInsightsModal } from '@/components/ai-insights-modal'
+import { WatchlistModal } from '@/components/watchlist-modal'
 import {
   Activity,
   User,
@@ -43,6 +44,7 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAIInsightsOpen, setIsAIInsightsOpen] = useState(false)
+  const [isWatchlistOpen, setIsWatchlistOpen] = useState(false)
 
   // Zustand store hooks
   const { isConnected, connectionStatus, marketIndices } = useMarketStore()
@@ -252,7 +254,12 @@ export function Header() {
 
               {/* Quick Actions */}
               <div className="hidden sm:flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setIsWatchlistOpen(true)}
+                >
                   <Plus className="h-4 w-4" />
                   Watchlist
                 </Button>
@@ -400,6 +407,9 @@ export function Header() {
 
       {/* AI Insights Modal */}
       <AIInsightsModal open={isAIInsightsOpen} onOpenChange={setIsAIInsightsOpen} />
+
+      {/* Watchlist Modal */}
+      <WatchlistModal open={isWatchlistOpen} onOpenChange={setIsWatchlistOpen} />
     </>
   )
 }
