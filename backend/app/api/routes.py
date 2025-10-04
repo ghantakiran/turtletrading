@@ -3,7 +3,7 @@ Main API router that includes all endpoint modules
 """
 
 from fastapi import APIRouter
-from app.api.endpoints import stocks, market, auth, websocket_info, search, lstm, sentiment_simple
+from app.api.endpoints import stocks, market, auth, websocket_info, search, lstm, sentiment_simple, news_ai
 # from app.api.endpoints import sentiment  # Full sentiment requires spacy - will enable in Issue #12
 from app.api.v1 import options, backtest, scanners, regimes
 
@@ -71,4 +71,11 @@ api_router.include_router(
 api_router.include_router(
     regimes.router,
     tags=["regimes"]
+)
+
+# AI-Enhanced News Endpoints (Issue #12 Phase 2)
+api_router.include_router(
+    news_ai.router,
+    prefix="/news",
+    tags=["news", "ai"]
 )

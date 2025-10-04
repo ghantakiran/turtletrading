@@ -17,6 +17,9 @@ interface NewsItem {
   symbols: string[]
   sentimentScore: number
   impact: 'high' | 'medium' | 'low'
+  category?: string
+  impactScore?: number
+  isFlashNews?: boolean
 }
 
 interface NewsPreviewProps {
@@ -34,49 +37,46 @@ export function NewsPreview({ limit = 5, className }: NewsPreviewProps) {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
         const symbols = ['AAPL', 'MSFT', 'GOOGL']
 
-        const responses = await Promise.allSettled(
-          symbols.map(symbol =>
-            fetch(`${backendUrl}/api/v1/sentiment/${symbol}`)
-              .then(res => res.json())
-          )
+        // Use AI-enhanced market news endpoint
+        const response = await fetch(
+          `${backendUrl}/api/v1/news/market/enhanced?${symbols.map(s => `symbols=${s}`).join('&')}&limit_per_symbol=3&use_ai=true`
         )
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch news')
+        }
+
+        const data = await response.json()
 
         const allNews: NewsItem[] = []
 
-        responses.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            const data = result.value
-            const symbol = symbols[index]
+        // Combine flash news and regular news
+        const allArticles = [
+          ...(data.flash_news || []),
+          ...(data.regular_news || [])
+        ].slice(0, limit)
 
-            data.recent_news?.slice(0, 2).forEach((newsItem: any, newsIndex: number) => {
-              const sentimentScore = Math.round(newsItem.sentiment_score * 100)
-              const sentimentMagnitude = Math.abs(newsItem.sentiment_score)
+        allArticles.forEach((newsItem: any, index: number) => {
+          const sentimentScore = Math.round(newsItem.sentiment_score * 100)
 
-              let impact: NewsItem['impact'] = 'low'
-              if (sentimentMagnitude > 0.6) impact = 'high'
-              else if (sentimentMagnitude > 0.3) impact = 'medium'
-
-              allNews.push({
-                id: `${symbol}-${newsIndex}`,
-                title: newsItem.title,
-                source: newsItem.source,
-                url: newsItem.url,
-                publishedAt: newsItem.published_at,
-                symbols: [symbol],
-                sentimentScore,
-                impact
-              })
-            })
-          }
+          allNews.push({
+            id: `ai-${index}`,
+            title: newsItem.title,
+            source: newsItem.source,
+            url: newsItem.url,
+            publishedAt: newsItem.published_at,
+            symbols: newsItem.symbols,
+            sentimentScore,
+            impact: newsItem.impact_level,
+            category: newsItem.category,
+            impactScore: newsItem.impact_score,
+            isFlashNews: newsItem.is_flash_news
+          })
         })
 
-        allNews.sort((a, b) =>
-          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-        )
-
-        setNews(allNews.slice(0, limit))
+        setNews(allNews)
       } catch (error) {
-        console.error('Error fetching news:', error)
+        console.error('Error fetching AI-enhanced news:', error)
       } finally {
         setLoading(false)
       }

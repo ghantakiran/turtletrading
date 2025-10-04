@@ -35,20 +35,46 @@ interface NewsArticle {
   sentimentScore: number
   impact: 'high' | 'medium' | 'low'
   isFlash?: boolean
+  keyInsights?: string[]
+  aiConfidence?: number
+  analysisMethod?: string
+  impactScore?: number
 }
 
-interface BackendNewsItem {
+interface AIEnhancedNewsItem {
   title: string
   source: string
   url: string
-  sentiment_score: number
   published_at: string
+  symbols: string[]
+  category: string
+  impact_level: string
+  impact_score: number
+  sentiment_score: number
+  original_sentiment: number
+  summary: string
+  key_insights: string[]
+  is_flash_news: boolean
+  ai_confidence: number
+  analysis_method: string
 }
 
-interface SentimentResponse {
-  symbol: string
-  recent_news: BackendNewsItem[]
-  overall_sentiment: number
+interface AIEnhancedNewsResponse {
+  symbol?: string
+  symbols_analyzed?: string[]
+  timestamp: string
+  total_articles?: number
+  news_count?: number
+  flash_news_count: number
+  average_market_sentiment?: number
+  average_sentiment?: number
+  average_market_impact?: number
+  average_impact_score?: number
+  category_distribution: Record<string, number>
+  articles?: AIEnhancedNewsItem[]
+  flash_news?: AIEnhancedNewsItem[]
+  regular_news?: AIEnhancedNewsItem[]
+  ai_enabled: boolean
 }
 
 export default function NewsPage() {
@@ -59,82 +85,63 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch news from backend API
+  // Fetch AI-enhanced news from backend API
   useEffect(() => {
     const fetchNews = async () => {
       setLoading(true)
       setError(null)
 
       try {
-        // Fetch news for multiple popular symbols
-        const symbols = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA', 'AMD', 'SPY', 'QQQ']
+        const symbols = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA']
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
 
-        const responses = await Promise.allSettled(
-          symbols.map(symbol =>
-            fetch(`${backendUrl}/api/v1/sentiment/${symbol}`)
-              .then(res => {
-                if (!res.ok) throw new Error(`Failed to fetch ${symbol}`)
-                return res.json()
-              })
-          )
+        // Use the new AI-enhanced market news endpoint
+        const response = await fetch(
+          `${backendUrl}/api/v1/news/market/enhanced?${symbols.map(s => `symbols=${s}`).join('&')}&limit_per_symbol=5&use_ai=true`
         )
 
-        // Transform backend data to frontend format
+        if (!response.ok) {
+          throw new Error(`Failed to fetch news: ${response.statusText}`)
+        }
+
+        const data: AIEnhancedNewsResponse = await response.json()
+
+        // Transform AI-enhanced data to frontend format
         const allNews: NewsArticle[] = []
 
-        responses.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            const data: SentimentResponse = result.value
-            const symbol = symbols[index]
+        // Combine flash news and regular news
+        const allArticles = [
+          ...(data.flash_news || []),
+          ...(data.regular_news || [])
+        ]
 
-            data.recent_news.forEach((newsItem, newsIndex) => {
-              // Determine category based on content (simple heuristic)
-              let category: NewsArticle['category'] = 'corporate'
-              const titleLower = newsItem.title.toLowerCase()
-              if (titleLower.includes('earnings') || titleLower.includes('revenue')) category = 'earnings'
-              else if (titleLower.includes('fed') || titleLower.includes('rate')) category = 'economic'
-              else if (titleLower.includes('regulation') || titleLower.includes('sec')) category = 'regulatory'
+        allArticles.forEach((newsItem, index) => {
+          // Convert sentiment score from -1 to 1 range to -100 to 100
+          const sentimentScore = Math.round(newsItem.sentiment_score * 100)
 
-              // Determine impact based on sentiment magnitude
-              const sentimentMagnitude = Math.abs(newsItem.sentiment_score)
-              let impact: NewsArticle['impact'] = 'low'
-              if (sentimentMagnitude > 0.6) impact = 'high'
-              else if (sentimentMagnitude > 0.3) impact = 'medium'
-
-              // Convert sentiment score from -1 to 1 range to -100 to 100
-              const sentimentScore = Math.round(newsItem.sentiment_score * 100)
-
-              // Mark as flash news if published within last hour and high impact
-              const publishedTime = new Date(newsItem.published_at).getTime()
-              const oneHourAgo = Date.now() - (60 * 60 * 1000)
-              const isFlash = publishedTime > oneHourAgo && impact === 'high'
-
-              allNews.push({
-                id: `${symbol}-${newsIndex}`,
-                title: newsItem.title,
-                summary: newsItem.title, // Use title as summary since backend doesn't provide full summary
-                source: newsItem.source,
-                url: newsItem.url,
-                publishedAt: newsItem.published_at,
-                symbols: [symbol],
-                category,
-                sentimentScore,
-                impact,
-                isFlash
-              })
-            })
-          }
+          allNews.push({
+            id: `ai-${index}-${newsItem.title.substring(0, 20)}`,
+            title: newsItem.title,
+            summary: newsItem.summary || newsItem.title,
+            source: newsItem.source,
+            url: newsItem.url,
+            publishedAt: newsItem.published_at,
+            symbols: newsItem.symbols,
+            category: newsItem.category as NewsArticle['category'],
+            sentimentScore,
+            impact: newsItem.impact_level as NewsArticle['impact'],
+            isFlash: newsItem.is_flash_news,
+            keyInsights: newsItem.key_insights,
+            aiConfidence: newsItem.ai_confidence,
+            analysisMethod: newsItem.analysis_method,
+            impactScore: newsItem.impact_score
+          })
         })
 
-        // Sort by published date (newest first)
-        allNews.sort((a, b) =>
-          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-        )
-
+        // Already sorted by impact score and recency from backend
         setNewsArticles(allNews)
       } catch (err) {
-        console.error('Error fetching news:', err)
+        console.error('Error fetching AI-enhanced news:', err)
         setError('Failed to load news. Please try again.')
       } finally {
         setLoading(false)
@@ -396,6 +403,29 @@ export default function NewsPage() {
 
                       <p className="text-sm text-muted-foreground mb-3">{article.summary}</p>
 
+                      {/* AI Key Insights */}
+                      {article.keyInsights && article.keyInsights.length > 0 && (
+                        <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Zap className="h-3.5 w-3.5 text-blue-600" />
+                            <span className="text-xs font-semibold text-blue-600">AI Insights</span>
+                            {article.aiConfidence && (
+                              <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
+                                {Math.round(article.aiConfidence * 100)}% confident
+                              </Badge>
+                            )}
+                          </div>
+                          <ul className="space-y-1">
+                            {article.keyInsights.map((insight, idx) => (
+                              <li key={idx} className="text-xs text-blue-900 dark:text-blue-100 flex items-start gap-2">
+                                <span className="text-blue-600 mt-0.5">•</span>
+                                <span>{insight}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">Related:</span>
@@ -524,6 +554,34 @@ export default function NewsPage() {
                     </h3>
 
                     <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{article.summary}</p>
+
+                    {/* AI Key Insights - Regular News */}
+                    {article.keyInsights && article.keyInsights.length > 0 && (
+                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Zap className="h-3.5 w-3.5 text-blue-600" />
+                          <span className="text-xs font-semibold text-blue-600">AI Insights</span>
+                          {article.aiConfidence && (
+                            <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
+                              {Math.round(article.aiConfidence * 100)}% confident
+                            </Badge>
+                          )}
+                          {article.impactScore && (
+                            <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300">
+                              Impact: {Math.round(article.impactScore * 100)}/100
+                            </Badge>
+                          )}
+                        </div>
+                        <ul className="space-y-1">
+                          {article.keyInsights.map((insight, idx) => (
+                            <li key={idx} className="text-xs text-blue-900 dark:text-blue-100 flex items-start gap-2">
+                              <span className="text-blue-600 mt-0.5">•</span>
+                              <span>{insight}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
