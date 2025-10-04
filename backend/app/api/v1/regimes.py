@@ -3,7 +3,7 @@ API endpoints for anomaly detection and volatility regime analysis
 Provides regime timeline, anomaly detection, and confidence scoring
 """
 
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
@@ -16,7 +16,7 @@ from app.services.anomaly_detection import (
     VolatilityRegime
 )
 from app.core.auth import get_current_user
-from app.models.schemas import User
+from app.models.auth_schemas import User
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ def get_anomaly_service() -> AnomalyDetectionService:
     description="Returns volatility regime timeline with transitions and confidence scores"
 )
 async def get_regime_timeline(
-    symbol: str = Field(..., description="Stock symbol (e.g., AAPL, MSFT)"),
+    symbol: str = Path(..., description="Stock symbol (e.g., AAPL, MSFT)"),
     window: int = Query(100, ge=30, le=1000, description="Analysis window in days"),
     current_user: User = Depends(get_current_user),
     service: AnomalyDetectionService = Depends(get_anomaly_service)
@@ -128,7 +128,7 @@ async def get_regime_timeline(
     description="Returns the current volatility regime classification"
 )
 async def get_current_regime(
-    symbol: str = Field(..., description="Stock symbol (e.g., AAPL, MSFT)"),
+    symbol: str = Path(..., description="Stock symbol (e.g., AAPL, MSFT)"),
     current_user: User = Depends(get_current_user),
     service: AnomalyDetectionService = Depends(get_anomaly_service)
 ):
@@ -164,7 +164,7 @@ async def get_current_regime(
     description="Detect anomalies using multiple detection methods"
 )
 async def detect_anomalies(
-    symbol: str = Field(..., description="Stock symbol (e.g., AAPL, MSFT)"),
+    symbol: str = Path(..., description="Stock symbol (e.g., AAPL, MSFT)"),
     lookback_days: int = Query(100, ge=30, le=1000, description="Days to analyze"),
     enable_zscore: bool = Query(True, description="Enable z-score detection"),
     enable_ewma: bool = Query(True, description="Enable EWMA detection"),

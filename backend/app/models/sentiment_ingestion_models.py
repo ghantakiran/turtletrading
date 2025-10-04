@@ -129,7 +129,7 @@ class TickerMapping(BaseModel):
     mapping_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     entity_text: str
     entity_type: EntityType
-    ticker_symbol: str = Field(..., regex=r'^[A-Z]{1,5}$')
+    ticker_symbol: str = Field(..., pattern=r'^[A-Z]{1,5}$')
     company_name: str
     confidence_score: float = Field(..., ge=0.0, le=1.0)
     mapping_source: str = Field(default="manual")  # manual, fuzzy_match, exact_match
@@ -182,7 +182,7 @@ class EntitySentiment(BaseModel):
 class SentimentAggregation(BaseModel):
     """Aggregated sentiment data for a ticker over a time period"""
     aggregation_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    ticker_symbol: str = Field(..., regex=r'^[A-Z]{1,5}$')
+    ticker_symbol: str = Field(..., pattern=r'^[A-Z]{1,5}$')
     time_period: str  # e.g., "1h", "1d", "1w"
     start_time: datetime
     end_time: datetime

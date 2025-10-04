@@ -329,3 +329,13 @@ def generate_expired_token(user_id: str) -> str:
         'iat': datetime.utcnow() - timedelta(seconds=2)
     }
     return jwt.encode(expired_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+async def get_current_user(token: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """
+    Stub function for getting current user.
+    Returns None since authentication is currently disabled (Issue #2).
+    This allows API endpoints to work without authentication.
+    """
+    # Authentication temporarily disabled - return None
+    # TODO: Re-implement when authentication system is re-enabled (Issue #2, #3)
+    return None

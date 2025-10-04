@@ -22,7 +22,7 @@ from ...models.scanner_models import (
     PortfolioAnalysis, ScannerInsight, ScannerType
 )
 from ...core.auth import get_current_user
-from ...models.auth import User
+from ...models.auth_schemas import User
 
 router = APIRouter(prefix="/api/v1/scanners", tags=["scanners"])
 

@@ -28,13 +28,34 @@ class StockPrice(BaseModel):
         }
 
 
+class StockData(BaseModel):
+    """
+    Stock data model for time-series price data.
+
+    Used by anomaly detection and technical analysis services.
+    """
+    symbol: str = Field(..., description="Stock symbol")
+    date: datetime = Field(..., description="Data timestamp")
+    open: float = Field(..., gt=0, description="Opening price")
+    high: float = Field(..., gt=0, description="High price")
+    low: float = Field(..., gt=0, description="Low price")
+    close: float = Field(..., gt=0, description="Closing price")
+    volume: int = Field(..., ge=0, description="Trading volume")
+    adjusted_close: Optional[float] = Field(None, gt=0, description="Adjusted closing price")
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+
 class TechnicalIndicators(BaseModel):
     """Technical indicators contract per Claude.StockAnalysis.md"""
     rsi: float = Field(..., ge=0, le=100, description="RSI value 0-100")
     macd: Dict[str, float] = Field(..., description="MACD line, signal, histogram")
     bollinger_bands: Dict[str, float] = Field(..., description="Upper, middle, lower bands")
     technical_score: float = Field(..., ge=0, le=1, description="Technical score 0-1")
-    recommendation: str = Field(..., regex="^(BUY|SELL|HOLD)$", description="Trading recommendation")
+    recommendation: str = Field(..., pattern="^(BUY|SELL|HOLD)$", description="Trading recommendation")
 
     # Additional indicators per module spec
     adx: float = Field(..., ge=0, le=100, description="ADX trend strength")
@@ -63,7 +84,7 @@ class AnalysisResult(BaseModel):
     sentiment_score: float = Field(..., ge=-1, le=1, description="Sentiment score -1 to 1")
     seasonality_score: float = Field(..., ge=0, le=1, description="Seasonality boost")
     final_score: float = Field(..., ge=0, le=1, description="Final weighted score")
-    recommendation: str = Field(..., regex="^(BUY|SELL|HOLD)$", description="Final recommendation")
+    recommendation: str = Field(..., pattern="^(BUY|SELL|HOLD)$", description="Final recommendation")
     confidence: float = Field(..., ge=0, le=1, description="Overall confidence level")
     timestamp: datetime = Field(..., description="Analysis timestamp")
 

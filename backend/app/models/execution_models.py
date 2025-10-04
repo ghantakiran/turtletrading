@@ -337,7 +337,7 @@ class ExecutionEvent(BaseModel):
 
 class WebhookConfig(BaseModel):
     """Configuration for execution webhooks."""
-    webhook_url: str = Field(..., regex=r'^https?://.+')
+    webhook_url: str = Field(..., pattern=r'^https?://.+')
     event_types: List[str]
 
     authentication: Optional[Dict[str, str]] = None

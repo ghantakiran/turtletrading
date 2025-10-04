@@ -209,6 +209,11 @@ function StockAnalysisPage() {
           return
         }
 
+        // Variables to store API responses
+        let techData: any = null
+        let prediction: any = null
+        let sentiment: any = null
+
         // Fetch stock price data
         const priceResponse = await fetch(`http://127.0.0.1:8000/api/v1/stocks/${symbol}/price`)
         if (priceResponse.ok) {
@@ -232,7 +237,7 @@ function StockAnalysisPage() {
         // Fetch technical analysis data
         const technicalResponse = await fetch(`http://127.0.0.1:8000/api/v1/stocks/${symbol}/technical?period=${selectedPeriod}`)
         if (technicalResponse.ok) {
-          const techData = await technicalResponse.json()
+          techData = await technicalResponse.json()
           setTechnicalData({
             ...techData,
             technical_score: techData.technical_score || 0.75
@@ -242,22 +247,28 @@ function StockAnalysisPage() {
         // Fetch LSTM predictions
         const lstmResponse = await fetch(`http://127.0.0.1:8000/api/v1/stocks/${symbol}/lstm?days=5`)
         if (lstmResponse.ok) {
-          const prediction = await lstmResponse.json()
+          prediction = await lstmResponse.json()
+          // Calculate trend from predictions
+          const trend = prediction.predictions && prediction.predictions.length > 0 &&
+                        prediction.predictions[prediction.predictions.length - 1] > prediction.current_price
+                        ? 'bullish' : 'bearish'
+
           setLstmData({
             ...prediction,
-            predictions: Array.from({ length: 5 }, (_, i) => ({
-              date: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-              price: prediction.predicted_price * (1 + (Math.random() - 0.5) * 0.1),
-              confidence: Math.max(0.6, Math.min(0.95, Math.random()))
-            })),
-            lstm_score: prediction.lstm_score || 0.65
+            trend,
+            predictions: prediction.prediction_dates?.map((date: string, i: number) => ({
+              date,
+              price: prediction.predictions[i],
+              confidence: prediction.confidence_intervals?.[i]?.confidence || 0.95
+            })) || [],
+            lstm_score: prediction.confidence || 0.65
           })
         }
 
         // Fetch sentiment data
-        const sentimentResponse = await fetch(`http://127.0.0.1:8000/api/v1/sentiment/stock/${symbol}`)
+        const sentimentResponse = await fetch(`http://127.0.0.1:8000/api/v1/sentiment/${symbol}`)
         if (sentimentResponse.ok) {
-          const sentiment = await sentimentResponse.json()
+          sentiment = await sentimentResponse.json()
           setSentimentData({
             sentiment_score: sentiment.sentiment_score || 0.15,
             articles_count: sentiment.articles_count || 25,
@@ -270,7 +281,7 @@ function StockAnalysisPage() {
         // Generate price history mock data
         const history = Array.from({ length: 30 }, (_, i) => {
           const date = new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000)
-          const basePrice = stockPrice?.current_price || 100
+          const basePrice = stockData?.current_price || 100
           const price = basePrice * (1 + (Math.random() - 0.5) * 0.2)
           return {
             date: date.toISOString().split('T')[0],
@@ -645,18 +656,18 @@ function StockAnalysisPage() {
                     <CardDescription>Relative Strength Index</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold mb-2">{technicalData.rsi?.toFixed(2)}</div>
+                    <div className="text-3xl font-bold mb-2">{technicalData.rsi?.value?.toFixed(2)}</div>
                     <Progress
-                      value={technicalData.rsi}
+                      value={technicalData.rsi?.value}
                       className="h-2"
                       style={{
-                        backgroundColor: technicalData.rsi > 70 ? '#ef4444' :
-                                       technicalData.rsi < 30 ? '#22c55e' : '#6b7280'
+                        backgroundColor: (technicalData.rsi?.value ?? 50) > 70 ? '#ef4444' :
+                                       (technicalData.rsi?.value ?? 50) < 30 ? '#22c55e' : '#6b7280'
                       }}
                     />
                     <p className="text-sm text-muted-foreground mt-2">
-                      {technicalData.rsi > 70 ? 'Overbought' :
-                       technicalData.rsi < 30 ? 'Oversold' : 'Neutral'}
+                      {(technicalData.rsi?.value ?? 50) > 70 ? 'Overbought' :
+                       (technicalData.rsi?.value ?? 50) < 30 ? 'Oversold' : 'Neutral'}
                     </p>
                   </CardContent>
                 </Card>
@@ -667,9 +678,9 @@ function StockAnalysisPage() {
                     <CardDescription>Moving Average Convergence Divergence</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold mb-2">{technicalData.macd?.toFixed(3)}</div>
-                    <div className={`text-sm ${technicalData.macd > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {technicalData.macd > 0 ? 'Bullish Signal' : 'Bearish Signal'}
+                    <div className="text-3xl font-bold mb-2">{technicalData.macd?.histogram?.toFixed(3)}</div>
+                    <div className={`text-sm ${(technicalData.macd?.histogram ?? 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {(technicalData.macd?.histogram ?? 0) > 0 ? 'Bullish Signal' : 'Bearish Signal'}
                     </div>
                   </CardContent>
                 </Card>
@@ -768,7 +779,7 @@ function StockAnalysisPage() {
                             lstmData.trend === 'bearish' ? 'bg-red-500' : 'bg-gray-500'
                           }
                         >
-                          {lstmData.trend.toUpperCase()}
+                          {(lstmData.trend || 'neutral').toUpperCase()}
                         </Badge>
                       </div>
                     </div>

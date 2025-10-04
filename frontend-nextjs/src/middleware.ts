@@ -10,6 +10,13 @@ export function middleware(req: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
 
+  // Set CSP header - allow local backend connections in development
+  const csp = process.env.NODE_ENV === 'development'
+    ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 wss: https:; frame-src 'none';"
+    : "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; frame-src 'none';"
+
+  response.headers.set('Content-Security-Policy', csp)
+
   return response
 }
 
