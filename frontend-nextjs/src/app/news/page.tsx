@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Metadata } from 'next'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +16,8 @@ import {
   RefreshCw,
   Filter,
   Zap,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -36,12 +37,114 @@ interface NewsArticle {
   isFlash?: boolean
 }
 
+interface BackendNewsItem {
+  title: string
+  source: string
+  url: string
+  sentiment_score: number
+  published_at: string
+}
+
+interface SentimentResponse {
+  symbol: string
+  recent_news: BackendNewsItem[]
+  overall_sentiment: number
+}
+
 export default function NewsPage() {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState<'1H' | '4H' | '1D' | '1W' | '1M'>('1D')
   const [searchQuery, setSearchQuery] = useState('')
+  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Mock news data
+  // Fetch news from backend API
+  useEffect(() => {
+    const fetchNews = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        // Fetch news for multiple popular symbols
+        const symbols = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA', 'AMD', 'SPY', 'QQQ']
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+
+        const responses = await Promise.allSettled(
+          symbols.map(symbol =>
+            fetch(`${backendUrl}/api/v1/sentiment/${symbol}`)
+              .then(res => {
+                if (!res.ok) throw new Error(`Failed to fetch ${symbol}`)
+                return res.json()
+              })
+          )
+        )
+
+        // Transform backend data to frontend format
+        const allNews: NewsArticle[] = []
+
+        responses.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            const data: SentimentResponse = result.value
+            const symbol = symbols[index]
+
+            data.recent_news.forEach((newsItem, newsIndex) => {
+              // Determine category based on content (simple heuristic)
+              let category: NewsArticle['category'] = 'corporate'
+              const titleLower = newsItem.title.toLowerCase()
+              if (titleLower.includes('earnings') || titleLower.includes('revenue')) category = 'earnings'
+              else if (titleLower.includes('fed') || titleLower.includes('rate')) category = 'economic'
+              else if (titleLower.includes('regulation') || titleLower.includes('sec')) category = 'regulatory'
+
+              // Determine impact based on sentiment magnitude
+              const sentimentMagnitude = Math.abs(newsItem.sentiment_score)
+              let impact: NewsArticle['impact'] = 'low'
+              if (sentimentMagnitude > 0.6) impact = 'high'
+              else if (sentimentMagnitude > 0.3) impact = 'medium'
+
+              // Convert sentiment score from -1 to 1 range to -100 to 100
+              const sentimentScore = Math.round(newsItem.sentiment_score * 100)
+
+              // Mark as flash news if published within last hour and high impact
+              const publishedTime = new Date(newsItem.published_at).getTime()
+              const oneHourAgo = Date.now() - (60 * 60 * 1000)
+              const isFlash = publishedTime > oneHourAgo && impact === 'high'
+
+              allNews.push({
+                id: `${symbol}-${newsIndex}`,
+                title: newsItem.title,
+                summary: newsItem.title, // Use title as summary since backend doesn't provide full summary
+                source: newsItem.source,
+                url: newsItem.url,
+                publishedAt: newsItem.published_at,
+                symbols: [symbol],
+                category,
+                sentimentScore,
+                impact,
+                isFlash
+              })
+            })
+          }
+        })
+
+        // Sort by published date (newest first)
+        allNews.sort((a, b) =>
+          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+        )
+
+        setNewsArticles(allNews)
+      } catch (err) {
+        console.error('Error fetching news:', err)
+        setError('Failed to load news. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchNews()
+  }, [])
+
+  // Mock news data for fallback (kept for reference)
   const mockNews: NewsArticle[] = [
     {
       id: '1',
@@ -172,10 +275,17 @@ export default function NewsPage() {
     return `${Math.floor(diffInMinutes / 1440)}d ago`
   }
 
-  const flashNews = mockNews.filter(article => article.isFlash)
+  // Use real data from API or fallback to mock data for development
+  const displayNews = newsArticles.length > 0 ? newsArticles : mockNews
+
+  const flashNews = displayNews.filter(article => article.isFlash)
   const regularNews = selectedSymbol
-    ? mockNews.filter(article => article.symbols.includes(selectedSymbol) && !article.isFlash)
-    : mockNews.filter(article => !article.isFlash)
+    ? displayNews.filter(article => article.symbols.includes(selectedSymbol) && !article.isFlash)
+    : displayNews.filter(article => !article.isFlash)
+
+  const handleRefresh = () => {
+    window.location.reload()
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -192,15 +302,51 @@ export default function NewsPage() {
             Real-time market news with AI-powered sentiment analysis
           </p>
         </div>
-        <Link href="/dashboard">
-          <Button variant="outline">
-            Back to Dashboard
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRefresh} disabled={loading}>
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
           </Button>
-        </Link>
+          <Link href="/dashboard">
+            <Button variant="outline">
+              Back to Dashboard
+            </Button>
+          </Link>
+        </div>
       </div>
 
+      {/* Loading State */}
+      {loading && newsArticles.length === 0 && (
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center space-y-3">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+              <p className="text-muted-foreground">Loading latest market news...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <Card className="border-2 border-red-500/20 bg-red-500/5">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center space-y-3">
+              <AlertCircle className="h-8 w-8 mx-auto text-red-600" />
+              <p className="text-red-600 font-medium">{error}</p>
+              <Button onClick={handleRefresh} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Flash News Section */}
-      {flashNews.length > 0 && (
+      {!loading && flashNews.length > 0 && (
         <Card className="border-2 border-red-500/20 bg-red-500/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-red-600">
