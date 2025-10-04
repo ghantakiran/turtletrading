@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react'
+import { MarketSentimentOverview } from '@/components/sentiment/MarketSentimentOverview'
+import { NewsPreview } from '@/components/news/NewsPreview'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -79,40 +81,51 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Recent activity */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Trades</CardTitle>
-            <CardDescription>
-              Your latest trading activity
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">AAPL</Badge>
-                <span className="text-sm">Buy 100 shares</span>
-              </div>
-              <div className="text-sm text-green-600">+$150.00</div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">GOOGL</Badge>
-                <span className="text-sm">Sell 50 shares</span>
-              </div>
-              <div className="text-sm text-red-600">-$75.50</div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">TSLA</Badge>
-                <span className="text-sm">Buy 25 shares</span>
-              </div>
-              <div className="text-sm text-green-600">+$425.75</div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Market Sentiment & News - New UI/UX Enhancement */}
+      <div className="space-y-6">
+        {/* Market Sentiment Section */}
+        <MarketSentimentOverview />
 
+        {/* News & Activity Grid */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* News Preview */}
+          <NewsPreview limit={5} />
+
+          {/* Recent Trades */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Trades</CardTitle>
+              <CardDescription>
+                Your latest trading activity
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">AAPL</Badge>
+                  <span className="text-sm">Buy 100 shares</span>
+                </div>
+                <div className="text-sm text-green-600">+$150.00</div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">GOOGL</Badge>
+                  <span className="text-sm">Sell 50 shares</span>
+                </div>
+                <div className="text-sm text-red-600">-$75.50</div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">TSLA</Badge>
+                  <span className="text-sm">Buy 25 shares</span>
+                </div>
+                <div className="text-sm text-green-600">+$425.75</div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Market Watchlist */}
         <Card>
           <CardHeader>
             <CardTitle>Market Watchlist</CardTitle>
@@ -120,35 +133,37 @@ export default function DashboardPage() {
               Stocks you're monitoring
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge>AAPL</Badge>
-                <span className="text-sm">$175.43</span>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex items-center justify-between border rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Badge>AAPL</Badge>
+                  <span className="text-sm">$175.43</span>
+                </div>
+                <div className="flex items-center text-sm text-green-600">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  +1.2%
+                </div>
               </div>
-              <div className="flex items-center text-sm text-green-600">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                +1.2%
+              <div className="flex items-center justify-between border rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Badge>MSFT</Badge>
+                  <span className="text-sm">$378.85</span>
+                </div>
+                <div className="flex items-center text-sm text-red-600">
+                  <TrendingDown className="h-3 w-3 mr-1" />
+                  -0.8%
+                </div>
               </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge>MSFT</Badge>
-                <span className="text-sm">$378.85</span>
-              </div>
-              <div className="flex items-center text-sm text-red-600">
-                <TrendingDown className="h-3 w-3 mr-1" />
-                -0.8%
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge>NVDA</Badge>
-                <span className="text-sm">$875.28</span>
-              </div>
-              <div className="flex items-center text-sm text-green-600">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                +3.1%
+              <div className="flex items-center justify-between border rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Badge>NVDA</Badge>
+                  <span className="text-sm">$875.28</span>
+                </div>
+                <div className="flex items-center text-sm text-green-600">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  +3.1%
+                </div>
               </div>
             </div>
           </CardContent>
