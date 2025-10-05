@@ -8,6 +8,7 @@ import { TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react'
 import { MarketSentimentOverview } from '@/components/sentiment/MarketSentimentOverview'
 import { NewsPreview } from '@/components/news/NewsPreview'
 import { FlashNewsBar } from '@/components/news/FlashNewsBar'
+import { SocialPostsPreview } from '@/components/social/SocialPostsPreview'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -110,9 +111,12 @@ export default function DashboardPage() {
           <div className="h-8 w-1 bg-gradient-to-b from-purple-600 to-violet-600 rounded-full" />
           <h2 className="text-2xl font-bold">News & Activity</h2>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* News Preview */}
           <NewsPreview limit={5} />
+
+          {/* Social Posts Preview */}
+          <SocialPostsPreview limit={5} />
 
           {/* Recent Trades */}
           <Card>
