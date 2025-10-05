@@ -15,17 +15,25 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-6">
-      {/* Welcome header */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
-        <p className="text-muted-foreground">
+    <div className="space-y-8">
+      {/* Welcome header with enhanced visual hierarchy */}
+      <div className="border-b pb-6">
+        <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          Welcome back!
+        </h1>
+        <p className="text-muted-foreground text-lg">
           Here's what's happening with your portfolio and the markets today.
         </p>
       </div>
 
-      {/* Market overview cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Portfolio Overview Section - Enhanced with clear boundaries */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-8 w-1 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full" />
+          <h2 className="text-2xl font-bold">Portfolio Overview</h2>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Portfolio</CardTitle>
@@ -80,13 +88,24 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      </section>
 
-      {/* Market Sentiment & News - New UI/UX Enhancement */}
-      <div className="space-y-6">
-        {/* Market Sentiment Section */}
+      {/* Market Sentiment Section - Enhanced with clear boundaries */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-8 w-1 bg-gradient-to-b from-green-600 to-emerald-600 rounded-full" />
+          <h2 className="text-2xl font-bold">Market Sentiment</h2>
+        </div>
         <MarketSentimentOverview />
 
-        {/* News & Activity Grid */}
+      </section>
+
+      {/* News & Activity Section - Enhanced with clear boundaries */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-8 w-1 bg-gradient-to-b from-purple-600 to-violet-600 rounded-full" />
+          <h2 className="text-2xl font-bold">News & Activity</h2>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           {/* News Preview */}
           <NewsPreview limit={5} />
@@ -124,11 +143,16 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+      </section>
 
-        {/* Market Watchlist */}
+      {/* Market Watchlist Section - Enhanced with clear boundaries */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-8 w-1 bg-gradient-to-b from-orange-600 to-amber-600 rounded-full" />
+          <h2 className="text-2xl font-bold">Market Watchlist</h2>
+        </div>
         <Card>
-          <CardHeader>
-            <CardTitle>Market Watchlist</CardTitle>
+          <CardHeader className="pb-3">
             <CardDescription>
               Stocks you're monitoring
             </CardDescription>
@@ -168,7 +192,7 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
     </div>
   )
 }
