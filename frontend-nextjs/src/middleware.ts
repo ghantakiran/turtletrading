@@ -1,7 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Temporarily disable authentication - allow all routes
+// Protected routes that require authentication
+const protectedRoutes = [
+  '/dashboard',
+  '/stock-analysis',
+  '/stock',
+  '/sentiment',
+  '/news',
+  '/watchlist',
+  '/portfolio',
+  '/profile',
+  '/settings',
+]
+
+// Public routes that don't require authentication
+const publicRoutes = [
+  '/',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+]
+
 export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+  const token = req.cookies.get('turtle_auth_token')?.value
+
+  // Check if the current path is protected
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+  const isPublicRoute = publicRoutes.some(route => pathname === route)
+
+  // Redirect to login if accessing protected route without token
+  if (isProtectedRoute && !token) {
+    const loginUrl = new URL('/login', req.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // Redirect to dashboard if accessing login/register with valid token
+  if ((pathname === '/login' || pathname === '/register') && token) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
   // Add security headers
   const response = NextResponse.next()
 
