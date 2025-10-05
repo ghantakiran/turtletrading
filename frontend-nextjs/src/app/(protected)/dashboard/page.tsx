@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react'
 import { MarketSentimentOverview } from '@/components/sentiment/MarketSentimentOverview'
 import { NewsPreview } from '@/components/news/NewsPreview'
+import { FlashNewsBar } from '@/components/news/FlashNewsBar'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -16,6 +17,9 @@ export const metadata: Metadata = {
 export default function DashboardPage() {
   return (
     <div className="space-y-8">
+      {/* Flash News Bar - Breaking market news */}
+      <FlashNewsBar />
+
       {/* Welcome header with enhanced visual hierarchy */}
       <div className="border-b pb-6">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
