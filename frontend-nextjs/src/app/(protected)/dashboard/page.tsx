@@ -11,6 +11,7 @@ import { FlashNewsBar } from '@/components/news/FlashNewsBar'
 import { SocialPostsPreview } from '@/components/social/SocialPostsPreview'
 import { LiveMarketIndices } from '@/components/market/LiveMarketIndices'
 import { LiveWatchlist } from '@/components/watchlist/LiveWatchlist'
+import { LiveAlertsPanel } from '@/components/alerts/LiveAlertsPanel'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -95,6 +96,15 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      </section>
+
+      {/* Live Alerts Section - Real-time notifications */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-8 w-1 bg-gradient-to-b from-red-600 to-rose-600 rounded-full" />
+          <h2 className="text-2xl font-bold">Live Alerts</h2>
+        </div>
+        <LiveAlertsPanel />
       </section>
 
       {/* Market Indices Section - Real-time market data */}

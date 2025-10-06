@@ -371,6 +371,24 @@ class MockWebSocketService {
         }
 
         marketStore.updateStockPrice(mockPrice)
+
+        // Randomly generate alerts (10% chance per price update)
+        if (Math.random() < 0.1) {
+          const alertTypes: Array<'price_above' | 'price_below' | 'volume_spike' | 'rsi_overbought' | 'rsi_oversold' | 'anomaly' | 'volatility_spike'> =
+            ['price_above', 'price_below', 'volume_spike', 'rsi_overbought', 'rsi_oversold', 'anomaly', 'volatility_spike']
+
+          const mockAlert = {
+            id: `alert-${Date.now()}-${Math.random()}`,
+            symbol,
+            type: alertTypes[Math.floor(Math.random() * alertTypes.length)],
+            condition: mockPrice.price,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            triggeredAt: new Date().toISOString()
+          }
+
+          marketStore.addAlert(mockAlert)
+        }
       })
     }, 2000)
 
@@ -393,6 +411,36 @@ class MockWebSocketService {
     }, 30000)
 
     this.intervals.push(sentimentInterval)
+
+    // Generate mock market indices every 5 seconds
+    const indicesInterval = setInterval(() => {
+      if (!this.isActive) return
+
+      const indices = [
+        { symbol: 'SPY', name: 'S&P 500', baseValue: 450 },
+        { symbol: 'QQQ', name: 'NASDAQ', baseValue: 385 },
+        { symbol: 'DIA', name: 'Dow Jones', baseValue: 350 }
+      ]
+
+      indices.forEach(({ symbol, name, baseValue }) => {
+        const currentValue = marketStore.marketIndices[symbol]?.value || baseValue
+        const change = (Math.random() - 0.5) * 5
+        const changePercent = (change / currentValue) * 100
+
+        const mockIndex = {
+          symbol,
+          name,
+          value: Math.max(0.01, currentValue + change),
+          change,
+          changePercent,
+          timestamp: new Date().toISOString()
+        }
+
+        marketStore.updateMarketIndex(mockIndex)
+      })
+    }, 5000)
+
+    this.intervals.push(indicesInterval)
   }
 }
 
