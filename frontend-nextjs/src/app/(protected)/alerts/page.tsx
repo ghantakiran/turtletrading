@@ -3,6 +3,9 @@ import { Suspense } from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AlertsClient } from './AlertsClient'
 import { getAlertsData, getMockAlertsData } from '@/lib/api/alerts-data'
+import { AlertCreationForm } from '@/components/alerts/AlertCreationForm'
+import { AlertHistory } from '@/components/alerts/AlertHistory'
+import { LiveAlertsPanel } from '@/components/alerts/LiveAlertsPanel'
 
 // Force dynamic rendering for authentication-protected routes
 export const dynamic = 'force-dynamic'
@@ -153,9 +156,55 @@ export default function AlertsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Suspense fallback={<AlertsLoadingSkeleton />}>
-        <AlertsDataLoader />
-      </Suspense>
+      <div className="space-y-8 p-6">
+        {/* Page Header */}
+        <div className="border-b pb-6">
+          <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
+            Trading Alerts
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Create custom alerts and manage real-time notifications for your watchlist
+          </p>
+        </div>
+
+        {/* Live Alerts Section */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-8 w-1 bg-gradient-to-b from-red-600 to-rose-600 rounded-full" />
+            <h2 className="text-2xl font-bold">Active Alerts</h2>
+          </div>
+          <LiveAlertsPanel />
+        </section>
+
+        {/* Alert Creation Section */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-8 w-1 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full" />
+            <h2 className="text-2xl font-bold">Create New Alert</h2>
+          </div>
+          <AlertCreationForm />
+        </section>
+
+        {/* Alert History Section */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-8 w-1 bg-gradient-to-b from-purple-600 to-violet-600 rounded-full" />
+            <h2 className="text-2xl font-bold">Alert History</h2>
+          </div>
+          <AlertHistory />
+        </section>
+
+        {/* Original Advanced Alert Builder (for backward compatibility) */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-8 w-1 bg-gradient-to-b from-green-600 to-emerald-600 rounded-full" />
+            <h2 className="text-2xl font-bold">Advanced Alert Builder</h2>
+          </div>
+          <Suspense fallback={<AlertsLoadingSkeleton />}>
+            <AlertsDataLoader />
+          </Suspense>
+        </section>
+      </div>
     </div>
   )
 }
