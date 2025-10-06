@@ -9,6 +9,8 @@ import { MarketSentimentOverview } from '@/components/sentiment/MarketSentimentO
 import { NewsPreview } from '@/components/news/NewsPreview'
 import { FlashNewsBar } from '@/components/news/FlashNewsBar'
 import { SocialPostsPreview } from '@/components/social/SocialPostsPreview'
+import { LiveMarketIndices } from '@/components/market/LiveMarketIndices'
+import { LiveWatchlist } from '@/components/watchlist/LiveWatchlist'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -95,6 +97,15 @@ export default function DashboardPage() {
       </div>
       </section>
 
+      {/* Market Indices Section - Real-time market data */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-8 w-1 bg-gradient-to-b from-blue-600 to-cyan-600 rounded-full" />
+          <h2 className="text-2xl font-bold">Market Indices</h2>
+        </div>
+        <LiveMarketIndices />
+      </section>
+
       {/* Market Sentiment Section - Enhanced with clear boundaries */}
       <section className="space-y-4">
         <div className="flex items-center gap-3 mb-4">
@@ -153,53 +164,13 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Market Watchlist Section - Enhanced with clear boundaries */}
+      {/* Market Watchlist Section - Real-time stock prices */}
       <section className="space-y-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-8 w-1 bg-gradient-to-b from-orange-600 to-amber-600 rounded-full" />
-          <h2 className="text-2xl font-bold">Market Watchlist</h2>
+          <h2 className="text-2xl font-bold">Your Watchlist</h2>
         </div>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>
-              Stocks you're monitoring
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="flex items-center justify-between border rounded-lg p-3">
-                <div className="flex items-center gap-2">
-                  <Badge>AAPL</Badge>
-                  <span className="text-sm">$175.43</span>
-                </div>
-                <div className="flex items-center text-sm text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +1.2%
-                </div>
-              </div>
-              <div className="flex items-center justify-between border rounded-lg p-3">
-                <div className="flex items-center gap-2">
-                  <Badge>MSFT</Badge>
-                  <span className="text-sm">$378.85</span>
-                </div>
-                <div className="flex items-center text-sm text-red-600">
-                  <TrendingDown className="h-3 w-3 mr-1" />
-                  -0.8%
-                </div>
-              </div>
-              <div className="flex items-center justify-between border rounded-lg p-3">
-                <div className="flex items-center gap-2">
-                  <Badge>NVDA</Badge>
-                  <span className="text-sm">$875.28</span>
-                </div>
-                <div className="flex items-center text-sm text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +3.1%
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <LiveWatchlist />
       </section>
     </div>
   )
