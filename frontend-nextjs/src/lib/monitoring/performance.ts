@@ -3,14 +3,14 @@
  * Tracks Web Vitals and custom performance metrics
  */
 
-import { getCLS, getFCP, getFID, getLCP, getTTFB, Metric } from 'web-vitals'
+import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from 'web-vitals'
 import * as Sentry from '@sentry/nextjs'
 
 // Performance thresholds (in milliseconds)
 export const PERFORMANCE_THRESHOLDS = {
   // Core Web Vitals
   LCP: { good: 2500, needsImprovement: 4000 }, // Largest Contentful Paint
-  FID: { good: 100, needsImprovement: 300 },   // First Input Delay
+  INP: { good: 200, needsImprovement: 500 },   // Interaction to Next Paint (replaces FID)
   CLS: { good: 0.1, needsImprovement: 0.25 },  // Cumulative Layout Shift
   FCP: { good: 1800, needsImprovement: 3000 }, // First Contentful Paint
   TTFB: { good: 800, needsImprovement: 1800 }, // Time to First Byte
@@ -28,11 +28,11 @@ export function initPerformanceMonitoring() {
   if (typeof window === 'undefined') return
 
   // Track Core Web Vitals
-  getCLS(sendToAnalytics)
-  getFCP(sendToAnalytics)
-  getFID(sendToAnalytics)
-  getLCP(sendToAnalytics)
-  getTTFB(sendToAnalytics)
+  onCLS(sendToAnalytics)
+  onFCP(sendToAnalytics)
+  onINP(sendToAnalytics)
+  onLCP(sendToAnalytics)
+  onTTFB(sendToAnalytics)
 }
 
 /**
@@ -50,10 +50,16 @@ function sendToAnalytics(metric: Metric) {
     })
   }
 
-  // Send to Sentry
-  Sentry.metrics.distribution(name, value, {
-    tags: { rating },
-    unit: name === 'CLS' ? 'ratio' : 'millisecond',
+  // Send to Sentry using setMeasurement
+  Sentry.setMeasurement(name, value, name === 'CLS' ? 'ratio' : 'millisecond')
+
+  // Add context to current scope
+  Sentry.setContext('web_vitals', {
+    [name]: {
+      value: Math.round(value),
+      rating,
+      delta: Math.round(delta),
+    }
   })
 
   // Track as custom event
@@ -84,13 +90,12 @@ export class PerformanceTracker {
       })
     }
 
-    Sentry.metrics.distribution('api.request.duration', duration, {
-      tags: {
-        endpoint,
-        status: status.toString(),
-        rating,
-      },
-      unit: 'millisecond',
+    Sentry.setMeasurement('api.request.duration', duration, 'millisecond')
+    Sentry.setContext('api_performance', {
+      endpoint,
+      status,
+      rating,
+      duration: Math.round(duration),
     })
   }
 
@@ -107,12 +112,11 @@ export class PerformanceTracker {
       })
     }
 
-    Sentry.metrics.distribution('page.load.duration', duration, {
-      tags: {
-        path,
-        rating,
-      },
-      unit: 'millisecond',
+    Sentry.setMeasurement('page.load.duration', duration, 'millisecond')
+    Sentry.setContext('page_load', {
+      path,
+      rating,
+      duration: Math.round(duration),
     })
   }
 
@@ -129,12 +133,11 @@ export class PerformanceTracker {
       })
     }
 
-    Sentry.metrics.distribution('websocket.latency', latency, {
-      tags: {
-        symbol,
-        rating,
-      },
-      unit: 'millisecond',
+    Sentry.setMeasurement('websocket.latency', latency, 'millisecond')
+    Sentry.setContext('websocket_performance', {
+      symbol,
+      rating,
+      latency: Math.round(latency),
     })
   }
 
@@ -148,9 +151,10 @@ export class PerformanceTracker {
       })
     }
 
-    Sentry.metrics.distribution('user.action.duration', duration, {
-      tags: { action },
-      unit: 'millisecond',
+    Sentry.setMeasurement('user.action.duration', duration, 'millisecond')
+    Sentry.setContext('user_action', {
+      action,
+      duration: Math.round(duration),
     })
   }
 
