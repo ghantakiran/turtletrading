@@ -379,6 +379,83 @@ curl "http://localhost:8000/api/v1/stocks/AAPL/lstm?days=5"`,
           </CardContent>
         </Card>
 
+        {/* SDK Usage */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl">SDK Usage</CardTitle>
+            <CardDescription>Use our official TypeScript/JavaScript SDK for easier integration</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="install" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="install">Installation</TabsTrigger>
+                <TabsTrigger value="usage">Basic Usage</TabsTrigger>
+                <TabsTrigger value="react">React Components</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="install" className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Install via npm</h4>
+                  <pre className="bg-slate-900 text-slate-50 p-4 rounded-lg overflow-x-auto">
+                    <code>{`npm install @turtletrading/sdk`}</code>
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Or use directly in your project</h4>
+                  <pre className="bg-slate-900 text-slate-50 p-4 rounded-lg overflow-x-auto">
+                    <code>{`import { TurtleTradingClient } from '@/sdk'`}</code>
+                  </pre>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="usage" className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Initialize Client</h4>
+                  <pre className="bg-slate-900 text-slate-50 p-4 rounded-lg overflow-x-auto">
+                    <code>{`import { TurtleTradingClient } from '@turtletrading/sdk'
+
+const client = new TurtleTradingClient({
+  apiKey: 'your-api-key',
+  baseURL: 'http://localhost:8000'
+})
+
+// Get stock price
+const price = await client.stocks.getPrice('AAPL')
+console.log(price.current_price)
+
+// Get AI predictions
+const predictions = await client.ai.getPredictions('AAPL', 7)
+console.log(predictions.predictions)
+
+// Get sentiment
+const sentiment = await client.sentiment.getAnalysis('AAPL')
+console.log(sentiment.overall_sentiment)`}</code>
+                  </pre>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="react" className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Use React Components</h4>
+                  <pre className="bg-slate-900 text-slate-50 p-4 rounded-lg overflow-x-auto">
+                    <code>{`import { StockPrice } from '@turtletrading/sdk/components'
+
+function Dashboard() {
+  return (
+    <StockPrice
+      symbol="AAPL"
+      apiKey="your-api-key"
+      refreshInterval={5000}
+    />
+  )
+}`}</code>
+                  </pre>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
         {/* Features */}
         <div className="grid md:grid-cols-2 gap-6 mt-8">
           <Card>
