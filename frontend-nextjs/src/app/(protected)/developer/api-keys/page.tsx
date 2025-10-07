@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { APIKey, APIKeyPermission, API_KEY_PERMISSIONS } from '@/types/api-keys'
+import { APIKey, APIKeyPermission } from '@/types/api-keys'
 import {
   createAPIKey,
   maskAPIKey,
@@ -18,12 +18,11 @@ import {
   isApproachingLimit,
   isRateLimitExceeded,
 } from '@/lib/api-keys/utils'
+import { CreateApiKeyModal, CreateApiKeyFormData } from '@/components/developer/CreateApiKeyModal'
 
 export default function APIKeysPage() {
   const [apiKeys, setApiKeys] = useState<APIKey[]>([])
   const [showNewKeyDialog, setShowNewKeyDialog] = useState(false)
-  const [newKeyName, setNewKeyName] = useState('')
-  const [selectedPermissions, setSelectedPermissions] = useState<APIKeyPermission[]>([])
   const [generatedKey, setGeneratedKey] = useState<APIKey | null>(null)
   const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set())
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
@@ -41,28 +40,15 @@ export default function APIKeysPage() {
     }
   }, [apiKeys])
 
-  const handleGenerateKey = () => {
-    if (!newKeyName.trim()) {
-      alert('Please enter a name for the API key')
-      return
-    }
-
-    if (selectedPermissions.length === 0) {
-      alert('Please select at least one permission')
-      return
-    }
-
+  const handleGenerateKey = (data: CreateApiKeyFormData) => {
     const newKey = createAPIKey({
-      name: newKeyName.trim(),
-      permissions: selectedPermissions,
+      name: data.name,
+      permissions: data.permissions,
       rateLimit: 1000, // Free tier default
     })
 
     setApiKeys(prev => [...prev, newKey])
     setGeneratedKey(newKey)
-    setNewKeyName('')
-    setSelectedPermissions([])
-    setShowNewKeyDialog(false)
   }
 
   const handleCopyKey = async (key: string, keyId: string) => {
@@ -99,14 +85,6 @@ export default function APIKeysPage() {
     }
   }
 
-  const togglePermission = (permission: APIKeyPermission) => {
-    setSelectedPermissions(prev =>
-      prev.includes(permission)
-        ? prev.filter(p => p !== permission)
-        : [...prev, permission]
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -129,75 +107,11 @@ export default function APIKeysPage() {
         </div>
 
         {/* New Key Dialog */}
-        {showNewKeyDialog && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold mb-6">Generate New API Key</h2>
-
-              {/* Key Name Input */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  API Key Name
-                </label>
-                <input
-                  type="text"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  placeholder="e.g., Production API Key"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              {/* Permissions Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Permissions
-                </label>
-                <div className="space-y-3">
-                  {(Object.entries(API_KEY_PERMISSIONS) as [APIKeyPermission, string][]).map(
-                    ([permission, description]) => (
-                      <label
-                        key={permission}
-                        className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedPermissions.includes(permission)}
-                          onChange={() => togglePermission(permission)}
-                          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">{permission}</div>
-                          <div className="text-sm text-gray-600">{description}</div>
-                        </div>
-                      </label>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowNewKeyDialog(false)
-                    setNewKeyName('')
-                    setSelectedPermissions([])
-                  }}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleGenerateKey}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Generate Key
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <CreateApiKeyModal
+          isOpen={showNewKeyDialog}
+          onClose={() => setShowNewKeyDialog(false)}
+          onCreate={handleGenerateKey}
+        />
 
         {/* Generated Key Success */}
         {generatedKey && (
