@@ -21,7 +21,8 @@ export function MarketIndices({ indices, timeRange, onRefresh }: MarketIndicesPr
   }
 
   const formatChangePercent = (changePercent: number) => {
-    return `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`
+    const sign = changePercent >= 0 ? '+' : ''
+    return `(${sign}${changePercent.toFixed(2)}%)`
   }
 
   const getChangeColor = (change: number) => {
