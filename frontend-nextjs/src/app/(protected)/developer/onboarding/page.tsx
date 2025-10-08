@@ -1,11 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Check, Code, Key, Rocket, BookOpen, PlayCircle } from 'lucide-react'
 import Link from 'next/link'
+import {
+  loadOnboardingProgress,
+  saveOnboardingProgress,
+  resetOnboardingProgress,
+  getProgressPercentage,
+  isOnboardingComplete,
+} from '@/lib/onboarding/persistence'
 
 const steps = [
   {
@@ -57,6 +64,21 @@ const steps = [
 
 export default function OnboardingPage() {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  // Load progress from localStorage on mount
+  useEffect(() => {
+    const savedProgress = loadOnboardingProgress()
+    setCompletedSteps(savedProgress)
+    setIsLoaded(true)
+  }, [])
+
+  // Save progress to localStorage whenever it changes
+  useEffect(() => {
+    if (isLoaded) {
+      saveOnboardingProgress(completedSteps)
+    }
+  }, [completedSteps, isLoaded])
 
   const toggleStep = (stepId: number) => {
     setCompletedSteps(prev => {
@@ -70,7 +92,15 @@ export default function OnboardingPage() {
     })
   }
 
-  const progress = (completedSteps.size / steps.length) * 100
+  const handleReset = () => {
+    if (confirm('Are you sure you want to reset your onboarding progress?')) {
+      resetOnboardingProgress()
+      setCompletedSteps(new Set())
+    }
+  }
+
+  const progress = getProgressPercentage(completedSteps, steps.length)
+  const isComplete = isOnboardingComplete(completedSteps, steps.length)
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -87,16 +117,28 @@ export default function OnboardingPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Your Progress</CardTitle>
-            <Badge variant={progress === 100 ? 'default' : 'secondary'}>
-              {completedSteps.size} / {steps.length} completed
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={isComplete ? 'default' : 'secondary'}>
+                {completedSteps.size} / {steps.length} completed
+              </Badge>
+              {completedSteps.size > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReset}
+                  className="text-xs"
+                >
+                  Reset
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">{Math.round(progress)}%</span>
+              <span className="font-medium">{progress}%</span>
             </div>
             <div className="h-2 bg-secondary rounded-full overflow-hidden">
               <div
@@ -105,7 +147,7 @@ export default function OnboardingPage() {
               />
             </div>
           </div>
-          {progress === 100 && (
+          {isComplete && (
             <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center gap-2 text-green-700 font-medium">
                 <Check className="h-5 w-5" />
