@@ -7,6 +7,7 @@ import { AppErrorBoundary } from "@/components/error-boundaries";
 import { ConnectionMonitor } from "@/components/connection-monitor";
 import { PerformanceMonitor } from "@/components/monitoring/PerformanceMonitor";
 import { BottomNavigation } from "@/components/mobile/bottom-navigation";
+import { OfflineProvider } from "@/components/offline/OfflineProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -68,13 +69,15 @@ export default function RootLayout({
         <AppErrorBoundary>
           <PerformanceMonitor />
           <ConnectionMonitor />
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-1 pb-20 md:pb-0">
-              {children}
-            </main>
-            <BottomNavigation />
-          </div>
+          <OfflineProvider>
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-1 pb-20 md:pb-0">
+                {children}
+              </main>
+              <BottomNavigation />
+            </div>
+          </OfflineProvider>
           <Toaster />
         </AppErrorBoundary>
       </body>
