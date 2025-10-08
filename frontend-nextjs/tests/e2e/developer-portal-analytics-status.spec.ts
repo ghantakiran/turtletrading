@@ -262,19 +262,93 @@ test.describe('Developer Portal - Support', () => {
     await expect(page.getByText(/FAQ|Frequently Asked Questions/i)).toBeVisible();
   });
 
-  test.skip('should submit feedback form', async ({ page }) => {
-    // Fill out the form
-    const subjectInput = page.getByPlaceholder(/Subject/i);
-    await subjectInput.fill('Test feedback');
+  test('should submit question feedback form', async ({ page }) => {
+    // Select Question tab (default)
+    await expect(page.getByRole('tab', { name: /Question/i })).toHaveAttribute('data-state', 'active');
 
-    const descriptionInput = page.getByPlaceholder(/Description|Tell us more/i);
-    await descriptionInput.fill('This is a test feedback message');
+    // Fill out the form
+    const subjectInput = page.getByPlaceholder(/What do you need help with/i);
+    await subjectInput.fill('Test Question');
+
+    const descriptionInput = page.getByPlaceholder(/Provide details about your question/i);
+    await descriptionInput.fill('This is a test question with sufficient detail');
 
     // Submit form
-    const submitButton = page.getByRole('button', { name: /Submit/i });
+    const submitButton = page.getByRole('button', { name: /Submit Question/i });
     await submitButton.click();
 
     // Should show success message
-    await expect(page.getByText(/Thank you|Success/i)).toBeVisible();
+    await expect(page.getByText(/Thank you for your feedback/i)).toBeVisible();
+    await expect(page.getByText(/Your question has been submitted successfully/i)).toBeVisible();
+
+    // Form should be reset
+    await expect(subjectInput).toHaveValue('');
+    await expect(descriptionInput).toHaveValue('');
+  });
+
+  test('should submit bug report with environment', async ({ page }) => {
+    // Select Bug Report tab
+    await page.getByRole('tab', { name: /Bug Report/i }).click();
+
+    // Fill out the form
+    const subjectInput = page.getByPlaceholder(/Brief description of the issue/i);
+    await subjectInput.fill('Test Bug Report');
+
+    const descriptionInput = page.getByPlaceholder(/Steps to reproduce/i);
+    await descriptionInput.fill('This is a detailed test bug report with steps');
+
+    const environmentInput = page.getByPlaceholder(/Browser, SDK version/i);
+    await environmentInput.fill('Chrome 120, macOS 14');
+
+    // Submit form
+    const submitButton = page.getByRole('button', { name: /Submit Bug Report/i });
+    await submitButton.click();
+
+    // Should show success message
+    await expect(page.getByText(/Thank you for your feedback/i)).toBeVisible();
+    await expect(page.getByText(/Your bug report has been submitted successfully/i)).toBeVisible();
+  });
+
+  test('should validate required fields', async ({ page }) => {
+    // Try to submit empty form
+    const submitButton = page.getByRole('button', { name: /Submit Question/i });
+    await submitButton.click();
+
+    // Should show validation errors
+    await expect(page.getByText(/Subject is required/i)).toBeVisible();
+    await expect(page.getByText(/Description is required/i)).toBeVisible();
+  });
+
+  test('should validate minimum length', async ({ page }) => {
+    // Fill with too short text
+    const subjectInput = page.getByPlaceholder(/What do you need help with/i);
+    await subjectInput.fill('ab'); // Less than 3 chars
+
+    const descriptionInput = page.getByPlaceholder(/Provide details/i);
+    await descriptionInput.fill('short'); // Less than 10 chars
+
+    // Submit form
+    const submitButton = page.getByRole('button', { name: /Submit Question/i });
+    await submitButton.click();
+
+    // Should show validation errors
+    await expect(page.getByText(/at least 3 characters/i)).toBeVisible();
+    await expect(page.getByText(/at least 10 characters/i)).toBeVisible();
+  });
+
+  test('should clear errors when user types', async ({ page }) => {
+    // Submit empty form to trigger errors
+    const submitButton = page.getByRole('button', { name: /Submit Question/i });
+    await submitButton.click();
+
+    // Errors should be visible
+    await expect(page.getByText(/Subject is required/i)).toBeVisible();
+
+    // Start typing in subject
+    const subjectInput = page.getByPlaceholder(/What do you need help with/i);
+    await subjectInput.fill('Test');
+
+    // Subject error should clear
+    await expect(page.getByText(/Subject is required/i)).not.toBeVisible();
   });
 });
