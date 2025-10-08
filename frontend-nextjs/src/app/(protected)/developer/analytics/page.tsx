@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BarChart3, TrendingUp, AlertCircle, Activity, RefreshCw } from 'lucide-react'
+import { BarChart3, TrendingUp, AlertCircle, Activity, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { loadAPIRequests, getAnalyticsSummary, getUsageStats } from '@/lib/analytics/utils'
 import { loadAPIKeys } from '@/lib/api-keys/utils'
+import { seedMockAnalytics, clearMockAnalytics } from '@/lib/analytics/mockData'
 import type { APIRequest } from '@/types/analytics'
 import Link from 'next/link'
 
@@ -25,6 +26,18 @@ export default function AnalyticsPage() {
     const allRequests = loadAPIRequests()
     setRequests(allRequests)
     setLoading(false)
+  }
+
+  const handleSeedMockData = () => {
+    seedMockAnalytics(100)
+    loadData()
+  }
+
+  const handleClearData = () => {
+    if (confirm('Are you sure you want to clear all analytics data? This cannot be undone.')) {
+      clearMockAnalytics()
+      loadData()
+    }
   }
 
   const apiKeys = loadAPIKeys()
@@ -53,7 +66,19 @@ export default function AnalyticsPage() {
           <h1 className="text-3xl font-bold">API Analytics</h1>
           <p className="text-muted-foreground mt-2">Track and analyze your API usage</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-2">
+          {requests.length === 0 && (
+            <Button variant="outline" size="sm" onClick={handleSeedMockData}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Generate Sample Data
+            </Button>
+          )}
+          {requests.length > 0 && (
+            <Button variant="outline" size="sm" onClick={handleClearData}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear Data
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={loadData} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
