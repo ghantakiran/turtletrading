@@ -1,22 +1,77 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BookOpen, MessageSquare, Mail, Github, FileQuestion, Lightbulb, Bug } from 'lucide-react'
+import { BookOpen, MessageSquare, Mail, Github, FileQuestion, Lightbulb, Bug, CheckCircle2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import {
+  FeedbackType,
+  FeedbackFormData,
+  validateFeedbackForm,
+  saveFeedbackSubmission,
+} from '@/lib/feedback/utils'
 
 export default function SupportPage() {
-  const [feedbackType, setFeedbackType] = useState<'bug' | 'feature' | 'question'>('question')
+  const [feedbackType, setFeedbackType] = useState<FeedbackType>('question')
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+  const [formData, setFormData] = useState<FeedbackFormData>({
+    type: 'question',
+    subject: '',
+    description: '',
+    environment: '',
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const formRef = useRef<HTMLFormElement>(null)
 
   const handleSubmitFeedback = (e: React.FormEvent) => {
     e.preventDefault()
-    // Simulate submission
+
+    // Validate form
+    const validation = validateFeedbackForm(formData)
+
+    if (!validation.isValid) {
+      setErrors(validation.errors)
+      return
+    }
+
+    // Save to localStorage
+    saveFeedbackSubmission(formData)
+
+    // Show success message
     setFeedbackSubmitted(true)
-    setTimeout(() => setFeedbackSubmitted(false), 3000)
+    setErrors({})
+
+    // Reset form
+    setFormData({
+      type: feedbackType,
+      subject: '',
+      description: '',
+      environment: '',
+    })
+    formRef.current?.reset()
+
+    // Hide success message after 5 seconds
+    setTimeout(() => setFeedbackSubmitted(false), 5000)
+  }
+
+  const handleInputChange = (field: keyof FeedbackFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
+  }
+
+  const handleTypeChange = (newType: FeedbackType) => {
+    setFeedbackType(newType)
+    setFormData((prev) => ({ ...prev, type: newType }))
   }
 
   return (
@@ -112,7 +167,7 @@ export default function SupportPage() {
               <CardDescription>Help us improve TurtleTrading API</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs value={feedbackType} onValueChange={(v) => setFeedbackType(v as any)}>
+              <Tabs value={feedbackType} onValueChange={(v) => handleTypeChange(v as FeedbackType)}>
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="question">
                     <FileQuestion className="h-4 w-4 mr-2" />
@@ -128,12 +183,22 @@ export default function SupportPage() {
                   </TabsTrigger>
                 </TabsList>
 
-                <form onSubmit={handleSubmitFeedback} className="mt-6 space-y-4">
+                <form ref={formRef} onSubmit={handleSubmitFeedback} className="mt-6 space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Subject</label>
+                    <label htmlFor="subject" className="text-sm font-medium mb-2 block">
+                      Subject *
+                    </label>
                     <input
+                      id="subject"
+                      name="subject"
                       type="text"
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={formData.subject}
+                      onChange={(e) => handleInputChange('subject', e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                        errors.subject
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-gray-300 focus:ring-primary'
+                      }`}
                       placeholder={
                         feedbackType === 'bug'
                           ? 'Brief description of the issue'
@@ -141,14 +206,29 @@ export default function SupportPage() {
                           ? 'What feature would you like to see?'
                           : 'What do you need help with?'
                       }
-                      required
                     />
+                    {errors.subject && (
+                      <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.subject}
+                      </div>
+                    )}
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Description</label>
+                    <label htmlFor="description" className="text-sm font-medium mb-2 block">
+                      Description *
+                    </label>
                     <textarea
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary min-h-[120px]"
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 min-h-[120px] ${
+                        errors.description
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-gray-300 focus:ring-primary'
+                      }`}
                       placeholder={
                         feedbackType === 'bug'
                           ? 'Steps to reproduce, expected vs actual behavior...'
@@ -156,16 +236,27 @@ export default function SupportPage() {
                           ? 'Describe the feature and how it would help you...'
                           : 'Provide details about your question...'
                       }
-                      required
                     />
+                    {errors.description && (
+                      <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.description}
+                      </div>
+                    )}
                   </div>
 
                   {feedbackType === 'bug' && (
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Environment</label>
+                      <label htmlFor="environment" className="text-sm font-medium mb-2 block">
+                        Environment (Optional)
+                      </label>
                       <input
+                        id="environment"
+                        name="environment"
                         type="text"
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        value={formData.environment}
+                        onChange={(e) => handleInputChange('environment', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="Browser, SDK version, etc."
                       />
                     </div>
@@ -177,8 +268,15 @@ export default function SupportPage() {
                   </Button>
 
                   {feedbackSubmitted && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-                      ✓ Thank you! Your feedback has been submitted.
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-medium text-green-900">Thank you for your feedback!</div>
+                        <div className="text-sm text-green-700 mt-1">
+                          Your {feedbackType === 'bug' ? 'bug report' : feedbackType === 'feature' ? 'feature request' : 'question'} has been submitted successfully.
+                          We'll review it and get back to you soon.
+                        </div>
+                      </div>
                     </div>
                   )}
                 </form>
