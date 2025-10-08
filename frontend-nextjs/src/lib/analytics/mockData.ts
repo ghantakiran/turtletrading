@@ -134,12 +134,17 @@ export function generateMockAnalyticsForTimeRange(
 }
 
 /**
+ * Storage key for analytics data (must match ANALYTICS_STORAGE_KEY from types)
+ */
+const ANALYTICS_STORAGE_KEY = 'turtletrading_analytics'
+
+/**
  * Seeds the analytics with mock data (for development/testing)
  */
 export function seedMockAnalytics(count: number = 100): void {
   try {
     const mockData = generateMockAnalytics(count, 30)
-    localStorage.setItem('api_requests', JSON.stringify(mockData))
+    localStorage.setItem(ANALYTICS_STORAGE_KEY, JSON.stringify(mockData))
     console.log(`✅ Seeded ${count} mock API requests`)
   } catch (error) {
     console.error('Failed to seed mock analytics:', error)
@@ -151,7 +156,7 @@ export function seedMockAnalytics(count: number = 100): void {
  */
 export function clearMockAnalytics(): void {
   try {
-    localStorage.removeItem('api_requests')
+    localStorage.removeItem(ANALYTICS_STORAGE_KEY)
     console.log('✅ Cleared mock analytics data')
   } catch (error) {
     console.error('Failed to clear mock analytics:', error)
