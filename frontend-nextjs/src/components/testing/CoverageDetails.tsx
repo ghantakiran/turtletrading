@@ -6,7 +6,8 @@
 'use client'
 
 import { FileCoverage, CoverageDetail } from '@/types/testing'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import CoverageFilters from './CoverageFilters'
 
 interface CoverageDetailsProps {
   fileCoverage: FileCoverage[]
@@ -15,10 +16,13 @@ interface CoverageDetailsProps {
 
 type SortField = 'path' | 'statements' | 'branches' | 'functions' | 'lines'
 type SortDirection = 'asc' | 'desc'
+type ThresholdFilter = 'all' | 'low' | 'medium' | 'high'
 
 export default function CoverageDetails({ fileCoverage, threshold = 70 }: CoverageDetailsProps) {
   const [sortField, setSortField] = useState<SortField>('statements')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [thresholdFilter, setThresholdFilter] = useState<ThresholdFilter>('all')
 
   if (fileCoverage.length === 0) {
     return (
@@ -42,28 +46,62 @@ export default function CoverageDetails({ fileCoverage, threshold = 70 }: Covera
     }
   }
 
-  const sortedFiles = [...fileCoverage].sort((a, b) => {
-    let aValue: number | string
-    let bValue: number | string
+  // Filter files based on search and threshold
+  const filteredFiles = useMemo(() => {
+    let filtered = fileCoverage
 
-    if (sortField === 'path') {
-      aValue = a.path
-      bValue = b.path
-    } else {
-      aValue = a[sortField].pct
-      bValue = b[sortField].pct
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(file =>
+        file.path.toLowerCase().includes(query)
+      )
     }
 
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
+    // Apply threshold filter
+    if (thresholdFilter !== 'all') {
+      filtered = filtered.filter(file => {
+        const pct = file.statements.pct
+        switch (thresholdFilter) {
+          case 'low':
+            return pct < 60
+          case 'medium':
+            return pct >= 60 && pct < 80
+          case 'high':
+            return pct >= 80
+          default:
+            return true
+        }
+      })
+    }
+
+    return filtered
+  }, [fileCoverage, searchQuery, thresholdFilter])
+
+  const sortedFiles = useMemo(() => {
+    return [...filteredFiles].sort((a, b) => {
+      let aValue: number | string
+      let bValue: number | string
+
+      if (sortField === 'path') {
+        aValue = a.path
+        bValue = b.path
+      } else {
+        aValue = a[sortField].pct
+        bValue = b[sortField].pct
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue)
+      }
+
       return sortDirection === 'asc'
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue)
-    }
-
-    return sortDirection === 'asc'
-      ? (aValue as number) - (bValue as number)
-      : (bValue as number) - (aValue as number)
-  })
+        ? (aValue as number) - (bValue as number)
+        : (bValue as number) - (aValue as number)
+    })
+  }, [filteredFiles, sortField, sortDirection])
 
   const getCoverageColor = (pct: number): string => {
     if (pct >= 80) return 'text-green-600 dark:text-green-400'
@@ -96,17 +134,30 @@ export default function CoverageDetails({ fileCoverage, threshold = 70 }: Covera
 
   const isLowCoverage = (pct: number): boolean => pct < threshold
 
+  const handleClearFilters = () => {
+    setSearchQuery('')
+    setThresholdFilter('all')
+  }
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             File Coverage Details
           </h2>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {fileCoverage.length} files
-          </div>
         </div>
+
+        {/* Filters */}
+        <CoverageFilters
+          searchQuery={searchQuery}
+          threshold={thresholdFilter}
+          onSearchChange={setSearchQuery}
+          onThresholdChange={setThresholdFilter}
+          onClearFilters={handleClearFilters}
+          fileCount={filteredFiles.length}
+          totalCount={fileCoverage.length}
+        />
 
         {/* Legend */}
         <div className="flex flex-wrap gap-4 mt-4 text-sm">
