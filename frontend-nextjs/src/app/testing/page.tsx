@@ -6,12 +6,15 @@
 'use client'
 
 import { useAutoRefresh } from '@/lib/hooks/useAutoRefresh'
-import { TestResults, HealthStatus } from '@/types/testing'
+import { TestResults, HealthStatus, DetailedTestResults } from '@/types/testing'
 import TestResultsOverview from '@/components/testing/TestResultsOverview'
 import CoverageChart from '@/components/testing/CoverageChart'
 import HealthStatusPanel from '@/components/testing/HealthStatusPanel'
 import SystemMetrics from '@/components/testing/SystemMetrics'
 import RefreshIndicator from '@/components/testing/RefreshIndicator'
+import CoverageDetails from '@/components/testing/CoverageDetails'
+import CoverageTrends from '@/components/testing/CoverageTrends'
+import TestPerformance from '@/components/testing/TestPerformance'
 
 export default function TestingPage() {
   // Auto-refresh test results every 30 seconds
@@ -33,6 +36,19 @@ export default function TestingPage() {
     30000
   )
 
+  // Auto-refresh detailed test results every 30 seconds
+  const {
+    data: detailedResults,
+    loading: detailedLoading,
+  } = useAutoRefresh<DetailedTestResults>(
+    async () => {
+      const response = await fetch('/api/testing/detailed-results')
+      if (!response.ok) throw new Error('Failed to fetch detailed results')
+      return response.json()
+    },
+    30000
+  )
+
   // Auto-refresh health status every 30 seconds
   const {
     data: healthStatus,
@@ -49,7 +65,7 @@ export default function TestingPage() {
     30000
   )
 
-  const loading = testLoading || healthLoading
+  const loading = testLoading || healthLoading || detailedLoading
   const error = testError || healthError
   const lastUpdate = testLastUpdate || healthLastUpdate
 
@@ -118,6 +134,21 @@ export default function TestingPage() {
           {/* Coverage Chart */}
           {testResults && (
             <CoverageChart coverage={testResults.coverage} />
+          )}
+
+          {/* Coverage Trends */}
+          {detailedResults?.coverageTrends && detailedResults.coverageTrends.length > 0 && (
+            <CoverageTrends trends={detailedResults.coverageTrends} />
+          )}
+
+          {/* File Coverage Details */}
+          {detailedResults?.fileCoverage && (
+            <CoverageDetails fileCoverage={detailedResults.fileCoverage} />
+          )}
+
+          {/* Test Performance */}
+          {detailedResults?.performance && (
+            <TestPerformance performance={detailedResults.performance} />
           )}
 
           {/* Health Status */}
